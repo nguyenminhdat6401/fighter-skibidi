@@ -15,5 +15,5 @@
 
 ### 1. Clone repo
 ```bash
-git clone https://github.com/your-username/fighter-skibidi-7-vvvvv.git
+git clone https://github.com/nguyenminhdat6401/fighter-skibidi-7-vvvvv.git
 cd fighter-skibidi-7-vvvvv
