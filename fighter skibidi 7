@@ -1,0 +1,2307 @@
+import pygame
+import os
+import random
+import math
+
+# Khởi tạo Pygame
+pygame.init()
+
+# Kích thước cửa sổ
+WIDTH, HEIGHT = 1366, 768
+screen = pygame.display.set_mode((WIDTH, HEIGHT))
+pygame.display.set_caption("Fighter Skibidi")
+
+# Màu sắc
+WHITE = (255, 255, 255)
+BLACK = (0, 0, 0)
+RED = (255, 0, 0)
+GREEN = (0, 255, 0)
+BLUE = (0, 0, 255)
+PINK = (255, 192, 203)
+ORANGE = (255, 165, 0)  # Thêm màu cam
+CREAM = (245, 245, 220)
+
+
+# Sau phần khởi tạo Pygame và các màu sắc
+pygame.mixer.music.load("font/musicbr.mp3")
+music_volume = 0.5  # Âm lượng nền ban đầu
+pygame.mixer.music.set_volume(music_volume)
+pygame.mixer.music.play(-1)
+
+# Tải âm thanh đấm và đồng bộ với âm lượng trong game
+game_volume = 0.5  # Âm lượng trong game ban đầu
+punch_sound = pygame.mixer.Sound("font/punch.mp3")  # Thay bằng đường dẫn thực tế
+punch_sound.set_volume(game_volume * 0.5)
+
+# Tải âm thanh click cho nút
+click_sound = pygame.mixer.Sound("font/click.mp3")  # Thay bằng đường dẫn thực tế
+click_sound.set_volume(game_volume)  # Đồng bộ với âm lượng trong game
+strain_sound = pygame.mixer.Sound("font/strain.mp3")  # Thêm âm thanh strain
+strain_sound.set_volume(game_volume)
+run_sound = pygame.mixer.Sound("font/run.mp3")  # Thêm âm thanh run
+run_sound.set_volume(game_volume * 1.5)
+
+# Tải hình ảnh nhân vật
+characters = {
+    "fighter1": {
+        "idle": [pygame.image.load("sprites2/c1idle0.png"),
+                 pygame.image.load("sprites2/c1idle1.png"),
+                 pygame.image.load("sprites2/c1idle2.png"),
+                 pygame.image.load("sprites2/c1idle3.png")],
+        "run": [pygame.image.load("sprites2/c1run0.png"),
+                pygame.image.load("sprites2/c1run1.png"),
+                pygame.image.load("sprites2/c1run2.png"),
+                pygame.image.load("sprites2/c1run3.png"),
+                pygame.image.load("sprites2/c1run4.png"),
+                pygame.image.load("sprites2/c1run5.png")],
+        "attack": [pygame.image.load("sprites2/c1attack1.png")],
+        "stun": [pygame.image.load("sprites2/c1kickhit0.png")],
+        "block": [pygame.image.load("sprites2/c1block0.png")],
+        "strain": [pygame.image.load("sprites2/c1strain0.png"),
+                   pygame.image.load("sprites2/c1strain1.png")],
+        "dash": [pygame.image.load("sprites2/c1dash0.png"),]
+    },
+    "fighter2": {
+        "idle": [pygame.image.load("sprites2/c2idle0.png"),
+                 pygame.image.load("sprites2/c2idle1.png"),
+                 pygame.image.load("sprites2/c2idle2.png")],
+        "run": [pygame.image.load("sprites2/c2run0.png"),
+                pygame.image.load("sprites2/c2run1.png"),
+                pygame.image.load("sprites2/c2run2.png"),
+                pygame.image.load("sprites2/c2run3.png"),
+                pygame.image.load("sprites2/c2run4.png"),
+                pygame.image.load("sprites2/c2run5.png")],
+        "attack": [pygame.image.load("sprites2/c2attack1.png")],
+        "stun": [pygame.image.load("sprites2/c2kickhit0.png")],
+        "block": [pygame.image.load("sprites2/c2block0.png")],
+        "strain": [pygame.image.load("sprites2/c2strain0.png"),
+                   pygame.image.load("sprites2/c2strain1.png")],
+        "dash": [pygame.image.load("sprites2/c2dash0.png"),]
+    },
+    "fighter3": {
+        "idle": [pygame.image.load("sprites2/c3idle0.png"),
+                 pygame.image.load("sprites2/c3idle1.png"),
+                 pygame.image.load("sprites2/c3idle2.png")],
+        "run": [pygame.image.load("sprites2/c3run0.png"),
+                pygame.image.load("sprites2/c3run1.png"),
+                pygame.image.load("sprites2/c3run2.png"),
+                pygame.image.load("sprites2/c3run3.png"),
+                pygame.image.load("sprites2/c3run4.png"),
+                pygame.image.load("sprites2/c3run5.png")],
+        "attack": [pygame.image.load("sprites2/c3attack1.png")],
+        "stun": [pygame.image.load("sprites2/c3kickhit0.png")],
+        "block": [pygame.image.load("sprites2/c3block0.png")],
+        "strain": [pygame.image.load("sprites2/c3strain0.png"),
+                   pygame.image.load("sprites2/c3strain1.png")],
+        "dash": [pygame.image.load("sprites2/c3dash0.png"),]
+    },
+    "fighter4": {
+        "idle": [pygame.image.load("sprites2/c4idle0.png"),
+                 pygame.image.load("sprites2/c4idle1.png"),
+                 pygame.image.load("sprites2/c4idle2.png")],
+        "run": [pygame.image.load("sprites2/c4run0.png"),
+                pygame.image.load("sprites2/c4run1.png"),
+                pygame.image.load("sprites2/c4run2.png"),
+                pygame.image.load("sprites2/c4run3.png"),
+                pygame.image.load("sprites2/c4run4.png"),
+                pygame.image.load("sprites2/c4run5.png")],
+        "attack": [pygame.image.load("sprites2/c4attack1.png")],
+        "stun": [pygame.image.load("sprites2/c4kickhit0.png")],
+        "block": [pygame.image.load("sprites2/c4block0.png")],
+        "strain": [pygame.image.load("sprites2/c4strain0.png"),
+                   pygame.image.load("sprites2/c4strain1.png")],
+        "dash": [pygame.image.load("sprites2/c4dash0.png"),]
+    },
+    "fighter5": {
+        "idle": [pygame.image.load("sprites2/c5idle0.png"),
+                 pygame.image.load("sprites2/c5idle1.png"),
+                 pygame.image.load("sprites2/c5idle2.png"),
+                 pygame.image.load("sprites2/c5idle3.png")],
+        "run": [pygame.image.load("sprites2/c5run0.png"),
+                pygame.image.load("sprites2/c5run1.png"),
+                pygame.image.load("sprites2/c5run2.png"),
+                pygame.image.load("sprites2/c5run3.png"),
+                pygame.image.load("sprites2/c5run4.png"),
+                pygame.image.load("sprites2/c5run5.png")],
+        "attack": [pygame.image.load("sprites2/c5attack1.png")],
+        "stun": [pygame.image.load("sprites2/c5kickhit0.png")],
+        "block": [pygame.image.load("sprites2/c5block0.png")],
+        "strain": [pygame.image.load("sprites2/c5strain0.png"),
+                   pygame.image.load("sprites2/c5strain1.png")],
+        "dash": [pygame.image.load("sprites2/c5dash0.png"),]
+    },
+}
+
+# Tải hình ảnh map
+maps = {
+    "map1": {
+        "name": "Arena",
+        "background": pygame.image.load("sprites2/background.png"),
+        "thumbnail": pygame.transform.scale(pygame.image.load("sprites2/background.png"), (150, 100))
+    },
+    "map2": {
+        "name": "Sunset",
+        "background": pygame.image.load("sprites2/background2.png"),
+        "thumbnail": pygame.transform.scale(pygame.image.load("sprites2/background2.png"), (150, 100))
+    },
+    "map3": {
+        "name": "Temple",
+        "background": pygame.image.load("sprites2/background3.png"),
+        "thumbnail": pygame.transform.scale(pygame.image.load("sprites2/background3.png"), (150, 100))
+    },
+    "map4": {
+        "name": "Beach",
+        "background": pygame.image.load("sprites2/background4.png"),
+        "thumbnail": pygame.transform.scale(pygame.image.load("sprites2/background4.png"), (150, 100))
+    },
+    "map5": {
+        "name": "New York",
+        "background": pygame.image.load("sprites2/background5.png"),
+        "thumbnail": pygame.transform.scale(pygame.image.load("sprites2/background5.png"), (150, 100))
+    }
+}
+
+effect_images1 = [pygame.image.load("sprites2/effect1.png"),
+                  pygame.image.load("sprites2/effect2.png"),
+                  pygame.image.load("sprites2/effect3.png"),
+                  pygame.image.load("sprites2/effect4.png"),
+                  pygame.image.load("sprites2/effect5.png"),
+                  pygame.image.load("sprites2/effect6.png"),]
+
+effect_images2 = [pygame.image.load("sprites2/effect1.png"),
+                  pygame.image.load("sprites2/effect2.png"),
+                  pygame.image.load("sprites2/effect3.png"),
+                  pygame.image.load("sprites2/effect4.png"),
+                  pygame.image.load("sprites2/effect5.png"),
+                  pygame.image.load("sprites2/effect6.png"),]
+
+effect_timer1 = 0
+effect_timer2 = 0
+effect_index1 = 0
+effect_index2 = 0
+effect_active1 = False
+effect_active2 = False
+
+# Danh sách hành động có thể thực hiện
+actions = ["punch", "kick", "block", "dodge", "special"]
+
+def stop_all_effects():
+    """Dừng tất cả các âm thanh hiệu ứng, giữ nguyên nhạc nền."""
+    punch_sound.stop()
+    click_sound.stop()
+    strain_sound.stop()
+    run_sound.stop()
+
+def draw_rounded_rect(surface, color, rect, radius):
+    """Vẽ hình chữ nhật với góc bo."""
+    pygame.draw.rect(surface, color, rect, border_radius=radius)
+
+
+def show_logo_screen():
+    # Tải hình ảnh logo
+    logo_image = pygame.image.load("sprites2/logo.png")  # Thay bằng đường dẫn đến logo của bạn
+    logo_image = pygame.transform.scale(logo_image, (WIDTH, HEIGHT))  # Điều chỉnh kích thước logo
+    
+    # Thời gian hiển thị và mờ dần
+    display_time = 2000  # Thời gian hiển thị logo (2 giây)
+    fade_time = 2000     # Thời gian mờ dần (1 giây)
+    start_time = pygame.time.get_ticks()
+    
+    clock = pygame.time.Clock()
+    showing_logo = True
+    
+    while showing_logo:
+        current_time = pygame.time.get_ticks()
+        elapsed_time = current_time - start_time
+        
+        # Tính toán alpha (độ trong suốt) cho hiệu ứng mờ dần
+        if elapsed_time < display_time:
+            alpha = 255  # Logo hiển thị hoàn toàn trong 2 giây đầu
+        elif elapsed_time < display_time + fade_time:
+            # Tính toán độ mờ dần từ 255 xuống 0 trong 1 giây
+            alpha = 255 * (1 - (elapsed_time - display_time) / fade_time)
+        else:
+            showing_logo = False  # Kết thúc khi mờ hoàn toàn
+        
+        # Tạo một bề mặt mới với alpha
+        logo_with_alpha = logo_image.copy()  # Sao chép hình ảnh gốc
+        logo_with_alpha.set_alpha(int(alpha))  # Đặt độ trong suốt
+        
+        # Vẽ logo lên màn hình
+        screen.blit(logo_with_alpha, (0, 0))
+        pygame.display.flip()
+        
+        # Kiểm tra sự kiện để thoát
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                exit()
+        
+        clock.tick(60)  # Giới hạn FPS
+    
+    # Sau khi logo mờ dần, chuyển sang màn hình loading
+
+def loading_screen():
+    # Tải hình ảnh nền cho màn hình tải
+    background_image = pygame.image.load("sprites2/loadgame.png")  # Bạn có thể thay bằng hình ảnh khác
+    background_image = pygame.transform.scale(background_image, (WIDTH, HEIGHT))
+    
+    # Font và màu sắc
+    loading_font = pygame.font.Font("font/font0.otf", 50)
+    loading_text = loading_font.render("Loading...", True, WHITE)
+    loading_text_rect = loading_text.get_rect(center=(WIDTH // 2, HEIGHT // 2 - 50))
+    
+    # Thanh tiến trình
+    bar_width = 400
+    bar_height = 30
+    bar_x = WIDTH // 2 - bar_width // 2
+    bar_y = HEIGHT // 2 + 20
+    progress = 0  # Tiến trình ban đầu (0%)
+    total_time = 5000  # Tổng thời gian tải (5 giây)
+    start_time = pygame.time.get_ticks()
+    
+    clock = pygame.time.Clock()
+    loading = True
+    
+    while loading:
+        # Tính toán tiến trình dựa trên thời gian
+        current_time = pygame.time.get_ticks()
+        elapsed_time = current_time - start_time
+        progress = min(elapsed_time / total_time, 1)  # Giới hạn tối đa là 1 (100%)
+        
+        # Vẽ nền và văn bản
+        screen.blit(background_image, (0, 0))
+        screen.blit(loading_text, loading_text_rect)
+        
+        # Vẽ thanh tiến trình
+        pygame.draw.rect(screen, PINK, (bar_x, bar_y, bar_width * progress, bar_height))  # Thanh tiến trình
+        pygame.draw.rect(screen, BLACK, (bar_x, bar_y, bar_width, bar_height), 2)  # Viền thanh
+        
+        pygame.display.flip()
+        
+        # Kiểm tra sự kiện để thoát
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                exit()
+        
+        # Khi thanh tải đầy, thoát vòng lặp
+        if progress >= 1:
+            loading = False
+        
+        clock.tick(60)  # Giới hạn FPS để tránh tải quá nhanh
+    
+    # Sau khi tải xong, chuyển sang trò chơi chính
+    return True
+
+# Gọi hàm hiển thị logo trước khi vào màn hình loading
+show_logo_screen()
+
+
+# Giao diện bắt đầu (Main Menu)
+def main_menu():
+    stop_all_effects()  # Dừng tất cả âm thanh hiệu ứng trước khi vào menu
+    
+    background_image = pygame.image.load("sprites2/i12.png")
+    background_image = pygame.transform.scale(background_image, (WIDTH, HEIGHT))
+    
+    title_font = pygame.font.Font("font/font1.ttf", 85)
+    button_font = pygame.font.Font("font/font0.otf", 40)
+    
+    buttons = [
+        {"text": "Play", "rect": pygame.Rect(WIDTH//2 - 100, 170, 200, 60)},
+        {"text": "Rule", "rect": pygame.Rect(WIDTH//2 - 100, 250, 200, 60)},
+        {"text": "Setting", "rect": pygame.Rect(WIDTH//2 - 100, 330, 200, 60)},
+        {"text": "Exit", "rect": pygame.Rect(WIDTH//2 - 100, 410, 200, 60)}
+    ]
+    selected_button = 0
+    running = True
+    
+    while running:
+        screen.blit(background_image, (0, 0))
+        
+        title_text = title_font.render("Fighter Skibidi", True, WHITE)
+        title_rect = title_text.get_rect(center=(WIDTH//2, 100))
+        screen.blit(title_text, title_rect)
+        
+        mouse_pos = pygame.mouse.get_pos()
+        for i, button in enumerate(buttons):
+            if button["rect"].collidepoint(mouse_pos):
+                selected_button = i
+            color = PINK if i == selected_button else BLACK
+            draw_rounded_rect(screen, color, button["rect"], 15)
+            text = button_font.render(button["text"], True, WHITE)
+            text_rect = text.get_rect(center=button["rect"].center)
+            screen.blit(text, text_rect)
+        
+        pygame.display.flip()
+        
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                return False
+            if event.type == pygame.KEYDOWN:
+                if event.key in [pygame.K_w, pygame.K_UP]:
+                    selected_button = (selected_button - 1) % len(buttons)
+                if event.key in [pygame.K_s, pygame.K_DOWN]:
+                    selected_button = (selected_button + 1) % len(buttons)
+                if event.key == pygame.K_RETURN:
+                    if buttons[selected_button]["text"] == "Play":
+                        pygame.mixer.Sound.play(click_sound)  # Phát âm thanh
+                        return True
+                    elif buttons[selected_button]["text"] == "Rule":
+                        pygame.mixer.Sound.play(click_sound)  # Phát âm thanh
+                        show_rules()
+                    elif buttons[selected_button]["text"] == "Setting":
+                        pygame.mixer.Sound.play(click_sound)  # Phát âm thanh
+                        if not show_settings():  # Nếu show_settings trả về False (QUIT)
+                            return False
+                    elif buttons[selected_button]["text"] == "Exit":
+                        pygame.mixer.Sound.play(click_sound)  # Phát âm thanh
+                        return False
+            if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+                for i, button in enumerate(buttons):
+                    if button["rect"].collidepoint(event.pos):
+                        pygame.mixer.Sound.play(click_sound)  # Phát âm thanh khi nhấp
+                        selected_button = i
+                        if button["text"] == "Play":
+                            return True
+                        elif button["text"] == "Rule":
+                            show_rules()
+                        elif button["text"] == "Setting":
+                            if not show_settings():  # Nếu show_settings trả về False (QUIT)
+                                return False
+                        elif button["text"] == "Exit":
+                            return False
+    return False
+    
+# Giao diện Rules và Settings - giữ nguyên
+def show_rules():
+    background_image = pygame.image.load("sprites2/br.png")
+    background_image = pygame.transform.scale(background_image, (WIDTH, HEIGHT))
+    font = pygame.font.Font("font/font1.ttf", 30)
+    button_font = pygame.font.Font("font/font0.otf", 30)  # Font cho nút Back
+    back_button = pygame.Rect(30, 70, 100, 40)  # Nút Back
+    running = True
+    
+    while running:
+        screen.blit(background_image, (0, 0))
+        rules_text = [
+            "Rules:",
+            "Player 1:                     Player 2:",
+            "Use A/D to move               Left/Right to move",
+            "J to attack                   1 to attack",
+            "I for special                 5 for special",
+            "K to jump                     2 to jump",
+            "S to block                    Down to block",
+            "L to dash                     3 to dash",
+            "U to strain                   4 to strain",
+            "WW to fly                     UpUp to fly",
+            "  "
+            "Reduce opponent's health to win",
+        ]
+        for i, line in enumerate(rules_text):
+            text = font.render(line, True, WHITE)
+            screen.blit(text, (WIDTH//2 - text.get_width()//2, 100 + i * 40))
+        
+        # Vẽ nút Back
+        mouse_pos = pygame.mouse.get_pos()
+        draw_rounded_rect(screen, ORANGE if back_button.collidepoint(mouse_pos) else BLACK, back_button, 10)
+        back_text = button_font.render("Back", True, WHITE)
+        back_text_rect = back_text.get_rect(center=back_button.center)
+        screen.blit(back_text, back_text_rect)
+        
+        pygame.display.flip()
+        
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                exit()
+            if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
+                running = False
+            if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+                if back_button.collidepoint(event.pos):
+                    pygame.mixer.Sound.play(click_sound)  # Phát âm thanh khi nhấp nút Back
+                    running = False  # Thoát khi nhấn nút Back
+
+def show_settings(in_game=False):
+    background_image = pygame.image.load("sprites2/br.png")
+    if not in_game:
+        background_image = pygame.transform.scale(background_image, (WIDTH, HEIGHT))
+    else:
+        background_image = pygame.transform.scale(background_image, (400, 400))  # Kích thước nhỏ bằng menu tạm dừng
+    
+    font = pygame.font.Font("font/font1.ttf", 30)
+    button_font = pygame.font.Font("font/font0.otf", 30)  # Font cho nút Back
+    label_font = pygame.font.Font("font/font1.ttf", 20)  # Font nhỏ hơn cho nhãn
+    back_button = pygame.Rect(30, 70, 100, 40)  # Nút Back
+    
+    # Thanh trượt cho âm thanh nền và âm thanh trong game
+    if in_game:
+        music_slider_track = pygame.Rect(WIDTH//2 - 75, HEIGHT//2 + 50, 150, 10)  # Thanh trượt âm thanh nền
+        music_slider_handle = pygame.Rect(0, HEIGHT//2 + 40, 20, 30)  # Nút tròn cho âm thanh nền
+        game_slider_track = pygame.Rect(WIDTH//2 - 75, HEIGHT//2 + 100, 150, 10)  # Thanh trượt âm thanh trong game
+        game_slider_handle = pygame.Rect(0, HEIGHT//2 + 90, 20, 30)  # Nút tròn cho âm thanh trong game
+        back_button = pygame.Rect(WIDTH//2 - 170, HEIGHT//2 - 180, 100, 40)  # Dịch nút Back
+    else:
+        music_slider_track = pygame.Rect(WIDTH//2 - 150, 250, 300, 10)
+        music_slider_handle = pygame.Rect(0, 240, 20, 30)
+        game_slider_track = pygame.Rect(WIDTH//2 - 150, 300, 300, 10)  # Thanh trượt âm thanh trong game
+        game_slider_handle = pygame.Rect(0, 290, 20, 30)  # Nút tròn cho âm thanh trong game
+    
+    global music_volume, game_volume  # Sử dụng biến toàn cục
+    current_music_volume = music_volume
+    current_game_volume = game_volume
+    
+    music_slider_handle_pos = music_slider_track.x + int(current_music_volume * music_slider_track.width)
+    music_slider_handle.x = music_slider_handle_pos - music_slider_handle.width // 2
+    
+    game_slider_handle_pos = game_slider_track.x + int(current_game_volume * game_slider_track.width)
+    game_slider_handle.x = game_slider_handle_pos - game_slider_handle.width // 2
+    
+    music_dragging = False
+    game_dragging = False
+    running = True
+    
+    while running:
+        if not in_game:
+            screen.blit(background_image, (0, 0))
+        else:
+            screen.blit(background_image, (WIDTH//2 - 200, HEIGHT//2 - 200))  # Căn giữa giao diện nhỏ
+        
+        settings_text = [
+            "Settings:"
+        ]
+        for i, line in enumerate(settings_text):
+            text = font.render(line, True, WHITE)
+            if in_game:
+                screen.blit(text, (WIDTH//2 - text.get_width()//2, HEIGHT//2 - 100 + i * 40))
+            else:
+                screen.blit(text, (WIDTH//2 - text.get_width()//2, 150 + i * 40))
+        
+        # Thêm nhãn cho thanh trượt
+        music_label = label_font.render(f"Music Volume: {int(current_music_volume * 100)}%", True, WHITE)
+        game_label = label_font.render(f"Game Volume: {int(current_game_volume * 100)}%", True, WHITE)
+        if in_game:
+            screen.blit(music_label, (music_slider_track.x, music_slider_track.y - 20))  # Nhãn "Music" trên thanh trượt
+            screen.blit(game_label, (game_slider_track.x, game_slider_track.y - 20))    # Nhãn "Game" trên thanh trượt
+        else:
+            screen.blit(music_label, (music_slider_track.x, music_slider_track.y - 20))
+            screen.blit(game_label, (game_slider_track.x, game_slider_track.y - 20))
+        
+        mouse_pos = pygame.mouse.get_pos()
+        # Thanh trượt âm thanh nền
+        pygame.draw.rect(screen, BLACK, music_slider_track)
+        pygame.draw.rect(screen, BLUE if music_slider_handle.collidepoint(mouse_pos) else WHITE, music_slider_handle, border_radius=10)
+        # Thanh trượt âm thanh trong game
+        pygame.draw.rect(screen, BLACK, game_slider_track)
+        pygame.draw.rect(screen, BLUE if game_slider_handle.collidepoint(mouse_pos) else WHITE, game_slider_handle, border_radius=10)
+        
+        # Vẽ nút Back
+        draw_rounded_rect(screen, ORANGE if back_button.collidepoint(mouse_pos) else BLACK, back_button, 10)
+        back_text = button_font.render("Back", True, WHITE)
+        back_text_rect = back_text.get_rect(center=back_button.center)
+        screen.blit(back_text, back_text_rect)
+        
+        pygame.display.flip()
+        
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                return False
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_ESCAPE:
+                    running = False
+            if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+                if music_slider_handle.collidepoint(event.pos):
+                    pygame.mixer.Sound.play(click_sound)  # Phát âm thanh khi nhấp thanh trượt
+                    music_dragging = True
+                if game_slider_handle.collidepoint(event.pos):
+                    pygame.mixer.Sound.play(click_sound)  # Phát âm thanh khi nhấp thanh trượt
+                    game_dragging = True
+                if back_button.collidepoint(event.pos):
+                    pygame.mixer.Sound.play(click_sound)  # Phát âm thanh khi nhấp nút Back
+                    running = False  # Thoát khi nhấn nút Back
+            if event.type == pygame.MOUSEBUTTONUP and event.button == 1:
+                music_dragging = False
+                game_dragging = False
+            if event.type == pygame.MOUSEMOTION:
+                if music_dragging:
+                    music_slider_handle.x = max(music_slider_track.x, min(event.pos[0] - music_slider_handle.width // 2, music_slider_track.x + music_slider_track.width - music_slider_handle.width))
+                    current_music_volume = (music_slider_handle.x - music_slider_track.x) / music_slider_track.width
+                    pygame.mixer.music.set_volume(current_music_volume)
+                    music_volume = current_music_volume  # Cập nhật biến toàn cục
+                if game_dragging:
+                    game_slider_handle.x = max(game_slider_track.x, min(event.pos[0] - game_slider_handle.width // 2, game_slider_track.x + game_slider_track.width - game_slider_handle.width))
+                    current_game_volume = (game_slider_handle.x - game_slider_track.x) / game_slider_track.width
+                    punch_sound.set_volume(current_game_volume)
+                    click_sound.set_volume(current_game_volume)
+                    strain_sound.set_volume(current_game_volume)
+                    run_sound.set_volume(current_game_volume)  # Đồng bộ âm lượng run
+                    game_volume = current_game_volume
+    
+    return True
+
+# Giao diện chọn chế độ - thêm tương tác chuột
+def select_mode():
+    modes = ["PvP", "PvE", "Adventure"]
+    mode_index = 0
+    selecting = True
+
+    background_image = pygame.image.load("sprites2/i12.png")
+    background_image = pygame.transform.scale(background_image, (WIDTH, HEIGHT))
+    
+    title_font_fighter = pygame.font.Font("font/font1.ttf", 50)
+    title_font_skibidi = pygame.font.Font("font/font1.ttf", 85)
+    mode_font = pygame.font.Font("font/font1.ttf", 48)
+    button_font = pygame.font.Font("font/font0.otf", 30)
+    
+    back_button = pygame.Rect(10, 10, 100, 40)
+    mode_buttons = [
+        {"text": "PvP", "rect": None},
+        {"text": "PvE", "rect": None},
+        {"text": "Adventure", "rect": None}
+    ]
+
+    while selecting:
+        screen.blit(background_image, (0, 0))
+        
+        title_fighter = title_font_fighter.render("FIGHTER", True, WHITE)
+        title_fighter_rect = title_fighter.get_rect(center=(WIDTH // 2, 100))
+        screen.blit(title_fighter, title_fighter_rect)
+        
+        title_skibidi = title_font_skibidi.render("SKIBIDI", True, WHITE)
+        title_skibidi_rect = title_skibidi.get_rect(center=(WIDTH // 2, 150))
+        screen.blit(title_skibidi, title_skibidi_rect)
+
+        x_positions = [WIDTH // 2, WIDTH // 2, WIDTH // 2]
+        mouse_pos = pygame.mouse.get_pos()
+        for i, mode in enumerate(modes):
+            mode_text = mode_font.render(mode, True, WHITE)
+            text_rect = mode_text.get_rect(center=(x_positions[i], 230 + i * 120))
+            mode_buttons[i]["rect"] = pygame.Rect(text_rect.x - 10, text_rect.y - 10, text_rect.width + 20, text_rect.height + 20)
+            if mode_buttons[i]["rect"].collidepoint(mouse_pos):
+                mode_index = i
+            color = PINK if i == mode_index else BLACK
+            draw_rounded_rect(screen, color, mode_buttons[i]["rect"], 15)
+            screen.blit(mode_text, text_rect)
+        
+        draw_rounded_rect(screen, BLACK if not back_button.collidepoint(mouse_pos) else ORANGE, back_button, 10)
+        back_text = button_font.render("Back", True, WHITE)
+        back_text_rect = back_text.get_rect(center=back_button.center)
+        screen.blit(back_text, back_text_rect)
+        
+        pygame.display.flip()
+        
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                exit()
+            if event.type == pygame.KEYDOWN:
+                if event.key in [pygame.K_w, pygame.K_UP]:
+                    mode_index = (mode_index - 1) % len(modes)
+                if event.key in [pygame.K_s, pygame.K_DOWN]:
+                    mode_index = (mode_index + 1) % len(modes)
+                if event.key == pygame.K_RETURN:
+                    pygame.mixer.Sound.play(click_sound)  # Phát âm thanh khi chọn bằng Enter
+                    selecting = False
+                if event.key == pygame.K_ESCAPE:
+                    return "main"
+            if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+                if back_button.collidepoint(event.pos):
+                    pygame.mixer.Sound.play(click_sound)  # Phát âm thanh khi nhấp nút Back
+                    return "main"
+                for i, button in enumerate(mode_buttons):
+                    if button["rect"].collidepoint(event.pos):
+                        pygame.mixer.Sound.play(click_sound)  # Phát âm thanh khi nhấp chế độ
+                        mode_index = i
+                        selecting = False
+    
+    return modes[mode_index]
+
+# Giao diện chọn nhân vật - thêm tương tác chuột
+def character_selection(is_adventure=False):
+    character_keys = [key for key in characters.keys() if "minion" not in key]
+    p1_index = 0
+    p2_index = 1 if not is_adventure else None
+    selecting = True
+    background_image = pygame.image.load("sprites2/br.png")
+    background_image = pygame.transform.scale(background_image, (WIDTH, HEIGHT))
+
+    font = pygame.font.Font("font/font0.otf", 54)
+    instruction_font = pygame.font.Font("font/font0.otf", 20)
+    button_font = pygame.font.Font("font/font0.otf", 30)
+    
+    back_button = pygame.Rect(30, 70, 100, 40)
+    start_button = pygame.Rect(WIDTH//2 - 50, HEIGHT - 100, 110, 40)
+
+    while selecting:
+        screen.blit(background_image, (0, 0))
+        select_text = font.render("Select character", True, WHITE)
+        select_text_rect = select_text.get_rect(center=(WIDTH // 2, 100))
+        screen.blit(select_text, select_text_rect)
+
+        if is_adventure:
+            instruction_text = instruction_font.render("A/D to select, Enter to start", True, WHITE)
+        else:
+            instruction_text = instruction_font.render("P1: A/D, P2: Left/Right, Click to select, Start to begin", True, WHITE)
+        instruction_text_rect = instruction_text.get_rect(center=(WIDTH // 2, HEIGHT - 30))
+        screen.blit(instruction_text, instruction_text_rect)
+
+        x_positions = [220, 440, 660, 880, 1100]
+        mouse_pos = pygame.mouse.get_pos()
+        for i, key in enumerate(character_keys):
+            border_color = RED if i == p1_index else (0, 0, 255) if not is_adventure and i == p2_index else WHITE
+            char_rect = pygame.Rect(x_positions[i] - 5, 200 - 5, 110, 110)
+            if char_rect.collidepoint(mouse_pos):
+                border_color = PINK
+            pygame.draw.rect(screen, border_color, char_rect, 5)
+            screen.blit(characters[key]["idle"][0], (x_positions[i], 200))
+        
+        draw_rounded_rect(screen, BLACK if not back_button.collidepoint(mouse_pos) else ORANGE, back_button, 10)
+        back_text = button_font.render("Back", True, WHITE)
+        back_text_rect = back_text.get_rect(center=back_button.center)
+        screen.blit(back_text, back_text_rect)
+        
+        draw_rounded_rect(screen, BLACK if not start_button.collidepoint(mouse_pos) else ORANGE, start_button, 10)
+        start_text = button_font.render("Start", True, WHITE)
+        start_text_rect = start_text.get_rect(center=start_button.center)
+        screen.blit(start_text, start_text_rect)
+        
+        pygame.display.flip()
+        
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                exit()
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_a:
+                    p1_index = (p1_index - 1) % len(character_keys)
+                if event.key == pygame.K_d:
+                    p1_index = (p1_index + 1) % len(character_keys)
+                if not is_adventure:
+                    if event.key == pygame.K_LEFT:
+                        p2_index = (p2_index - 1) % len(character_keys)
+                    if event.key == pygame.K_RIGHT:
+                        p2_index = (p2_index + 1) % len(character_keys)
+                if event.key == pygame.K_RETURN:
+                    pygame.mixer.Sound.play(click_sound)  # Phát âm thanh khi chọn bằng Enter
+                    if is_adventure or (p1_index != p2_index):
+                        selecting = False
+                if event.key == pygame.K_ESCAPE:
+                    return "mode" if is_adventure else ("mode", "mode")
+            if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+                if back_button.collidepoint(event.pos):
+                    pygame.mixer.Sound.play(click_sound)  # Phát âm thanh khi nhấp nút Back
+                    return "mode" if is_adventure else ("mode", "mode")
+                if start_button.collidepoint(event.pos):
+                    pygame.mixer.Sound.play(click_sound)  # Phát âm thanh khi nhấp nút Start
+                    if is_adventure or (p1_index != p2_index):
+                        selecting = False
+                for i in range(len(character_keys)):
+                    char_rect = pygame.Rect(x_positions[i] - 5, 200 - 5, 110, 110)
+                    if char_rect.collidepoint(event.pos):
+                        pygame.mixer.Sound.play(click_sound)  # Phát âm thanh khi nhấp nhân vật
+                        if is_adventure:
+                            p1_index = i
+                        else:
+                            if p1_index != i and p2_index != i:
+                                if p1_index == -1:
+                                    p1_index = i
+                                elif p2_index == -1:
+                                    p2_index = i
+                            elif p1_index == i:
+                                p1_index = (p1_index + 1) % len(character_keys)
+                                if p1_index == p2_index:
+                                    p1_index = (p1_index + 1) % len(character_keys)
+                            elif p2_index == i:
+                                p2_index = (p2_index + 1) % len(character_keys)
+                                if p2_index == p1_index:
+                                    p2_index = (p2_index + 1) % len(character_keys)
+    
+    if is_adventure:
+        return character_keys[p1_index]
+    return character_keys[p1_index], character_keys[p2_index]
+
+# Giao diện chọn map - thêm tương tác chuột
+def select_map():
+    map_keys = list(maps.keys())
+    map_index = 0
+    selecting = True
+    background_image = pygame.image.load("sprites2/br.png")
+    background_image = pygame.transform.scale(background_image, (WIDTH, HEIGHT))
+
+    title_font = pygame.font.Font("font/font0.otf", 54)
+    instruction_font = pygame.font.Font("font/font0.otf", 20)
+    normal_font = pygame.font.Font(None, 28)
+    button_font = pygame.font.Font("font/font0.otf", 30)
+    
+    back_button = pygame.Rect(30, 70, 100, 40)
+
+    while selecting:
+        screen.blit(background_image, (0, 0))
+        
+        title_text = title_font.render("Select Map", True, WHITE)
+        title_text_rect = title_text.get_rect(center=(WIDTH // 2, 100))
+        screen.blit(title_text, title_text_rect)
+
+        instruction_text = instruction_font.render("Click to choose, Enter to start", True, WHITE)
+        instruction_text_rect = instruction_text.get_rect(center=(WIDTH // 2, HEIGHT - 30))
+        screen.blit(instruction_text, instruction_text_rect)
+
+        x_positions = [220, 440, 660, 880, 1100]
+        mouse_pos = pygame.mouse.get_pos()
+        for i, key in enumerate(map_keys):
+            thumbnail = maps[key]["thumbnail"]
+            thumbnail_rect = thumbnail.get_rect(center=(x_positions[i], 200))
+            border_color = BLUE if i == map_index else WHITE
+            if thumbnail_rect.collidepoint(mouse_pos):
+                border_color = PINK
+            pygame.draw.rect(screen, border_color, (thumbnail_rect.x - 5, thumbnail_rect.y - 5, thumbnail_rect.width + 10, thumbnail_rect.height + 10), 5)
+            screen.blit(thumbnail, thumbnail_rect)
+
+            map_text = normal_font.render(maps[key]["name"], True, WHITE)
+            text_rect = map_text.get_rect(center=(x_positions[i], 280))
+            screen.blit(map_text, text_rect)
+
+        draw_rounded_rect(screen, BLACK if not back_button.collidepoint(mouse_pos) else ORANGE, back_button, 10)
+        back_text = button_font.render("Back", True, WHITE)
+        back_text_rect = back_text.get_rect(center=back_button.center)
+        screen.blit(back_text, back_text_rect)
+        
+        pygame.display.flip()
+        
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                exit()
+            if event.type == pygame.KEYDOWN:
+                if event.key in [pygame.K_a, pygame.K_LEFT]:
+                    map_index = (map_index - 1) % len(map_keys)
+                if event.key in [pygame.K_d, pygame.K_RIGHT]:
+                    map_index = (map_index + 1) % len(map_keys)
+                if event.key == pygame.K_RETURN:
+                    pygame.mixer.Sound.play(click_sound)  # Phát âm thanh khi chọn bằng Enter
+                    selecting = False
+                if event.key == pygame.K_ESCAPE:
+                    return "character"
+            if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+                if back_button.collidepoint(event.pos):
+                    pygame.mixer.Sound.play(click_sound)  # Phát âm thanh khi nhấp nút Back
+                    return "character"
+                for i, key in enumerate(map_keys):
+                    thumbnail_rect = maps[key]["thumbnail"].get_rect(center=(x_positions[i], 200))
+                    if thumbnail_rect.collidepoint(event.pos):
+                        pygame.mixer.Sound.play(click_sound)  # Phát âm thanh khi nhấp map
+                        map_index = i
+                        selecting = False
+
+    return map_keys[map_index]
+
+# Thêm vào đầu file, sau phần định nghĩa maps
+adventure_levels = [
+    {
+        "name": "Level 1: Robots",
+        "minions": [
+            # Lượt 1: 1 bot
+            {"character": "minion1", "x": 800, "health": 200, "speed": 3, "energy": 50},
+            # Lượt 2: 2 bot
+            {"character": "minion1", "x": 700, "health": 200, "speed": 3, "energy": 50},
+            {"character": "minion1", "x": 900, "health": 200, "speed": 3, "energy": 50},
+            # Lượt 3: 3 bot
+            {"character": "minion1", "x": 600, "health": 200, "speed": 3, "energy": 50},
+            {"character": "minion1", "x": 800, "health": 200, "speed": 3, "energy": 50},
+            {"character": "minion1", "x": 1000, "health": 200, "speed": 3, "energy": 50}
+        ],
+        "map": "adventure1"  # Map riêng cho Level 1
+    },
+    {
+        "name": "Level 2: Homicidal",
+        "minions": [
+            # Lượt 1: 2 bot
+            {"character": "minion2", "x": 600, "health": 300, "speed": 4, "energy": 60},
+            {"character": "minion2", "x": 1000, "health": 300, "speed": 4, "energy": 60},
+            # Lượt 2: 3 bot
+            {"character": "minion2", "x": 500, "health": 250, "speed": 5, "energy": 50},
+            {"character": "minion2", "x": 800, "health": 250, "speed": 5, "energy": 50},
+            {"character": "minion2", "x": 1100, "health": 250, "speed": 5, "energy": 50},
+            # Lượt 3: 1 bot
+            {"character": "minion2", "x": 800, "health": 500, "speed": 5, "energy": 80}
+        ],
+        "map": "adventure2"  # Map riêng cho Level 2
+    },
+    {
+    "name": "Level 3: Spider Queen ",
+        "minions": [
+            # Lượt 1: 2 bot (minion1 + minion2)
+            {"character": "minion3", "x": 600, "health": 250, "speed": 4, "energy": 60},
+            {"character": "minion3", "x": 1000, "health": 350, "speed": 5, "energy": 70},
+            # Lượt 2: 3 bot (mix minion1 và minion2)
+            {"character": "minion3", "x": 500, "health": 300, "speed": 4, "energy": 60},
+            {"character": "minion3", "x": 800, "health": 400, "speed": 5, "energy": 80},
+            {"character": "minion3", "x": 1100, "health": 300, "speed": 4, "energy": 60},
+            # Lượt 3: 2 bot mạnh hơn
+            {"character": "minion3", "x": 700, "health": 600, "speed": 6, "energy": 100},
+            {"character": "minion3", "x": 900, "health": 600, "speed": 6, "energy": 100}
+        ],
+        "map": "adventure3"  # Map mới cho Level 3
+    },
+    {
+        "name": "Level 4: Ghost Warrior",
+        "minions": [
+            # Lượt 1: 3 bot (mix minion1 và minion2)
+            {"character": "minion4", "x": 600, "health": 300, "speed": 4, "energy": 60},
+            {"character": "minion4", "x": 800, "health": 400, "speed": 5, "energy": 70},
+            {"character": "minion4", "x": 1000, "health": 300, "speed": 4, "energy": 60},
+            # Lượt 2: 4 bot (mix minion2 và minion3)
+            {"character": "minion4", "x": 500, "health": 350, "speed": 5, "energy": 70},
+            {"character": "minion4", "x": 700, "health": 450, "speed": 6, "energy": 80},
+            {"character": "minion4", "x": 900, "health": 350, "speed": 5, "energy": 70},
+            {"character": "minion4", "x": 1100, "health": 450, "speed": 6, "energy": 80},
+            # Lượt 3: 2 bot cực mạnh (minion3)
+            {"character": "minion4", "x": 650, "health": 800, "speed": 7, "energy": 120},
+            {"character": "minion4", "x": 950, "health": 800, "speed": 7, "energy": 120}
+        ],
+        "map": "adventure4"  # Map mới cho Level 4
+    },
+    {
+    "name": "Level 5: Dark Overlord",
+    "minions": [
+        # Lượt 1: Chỉ có trùm cuối
+        {"character": "minion5", "x": WIDTH//2, "health": 2000, "speed": 3, "energy": 100},  # Trùm đứng im (speed = 0)
+        # Lượt 2: Trùm + 2 minion hỗ trợ
+        {"character": "minion5", "x": WIDTH//2, "health": 2000, "speed": 3, "energy": 100},  # Trùm
+        {"character": "minion1", "x": 400, "health": 300, "speed": 4, "energy": 50},  # Minion hỗ trợ
+        {"character": "minion1", "x": 900, "health": 300, "speed": 4, "energy": 50},  # Minion hỗ trợ
+        # Lượt 3: Trùm + 4 minion mạnh hơn
+        {"character": "minion5", "x": WIDTH//2, "health": 2000, "speed": 3, "energy": 100},  # Trùm
+        {"character": "minion2", "x": 300, "health": 400, "speed": 5, "energy": 60},
+        {"character": "minion2", "x": 500, "health": 400, "speed": 5, "energy": 60},
+        {"character": "minion3", "x": 800, "health": 500, "speed": 6, "energy": 70},
+        {"character": "minion3", "x": 1000, "health": 500, "speed": 6, "energy": 70}
+    ],
+    "map": "adventure5"  # Map mới cho Level 5
+}
+]
+# Định nghĩa hoạt ảnh cho bot nhỏ (minion)
+# Định nghĩa hoạt ảnh cho bot nhỏ (minion)
+minion_characters = {
+    "minion1": {
+        "idle": [pygame.transform.scale(pygame.image.load("sprites2/bot3idle0.png"), (250, 200)),
+                 pygame.transform.scale(pygame.image.load("sprites2/bot3idle1.png"), (250, 200)),
+                 pygame.transform.scale(pygame.image.load("sprites2/bot3idle2.png"), (250, 200)),
+                 pygame.transform.scale(pygame.image.load("sprites2/bot3idle3.png"), (250, 200)),
+                 pygame.transform.scale(pygame.image.load("sprites2/bot3idle4.png"), (250, 200))],
+        "special": [pygame.transform.scale(pygame.image.load("sprites2/bot3special0.png"), (250, 200)),
+                    pygame.transform.scale(pygame.image.load("sprites2/bot3special1.png"), (250, 200)),
+                    pygame.transform.scale(pygame.image.load("sprites2/bot3special2.png"), (250, 200)),
+                    pygame.transform.scale(pygame.image.load("sprites2/bot3special3.png"), (250, 200))],
+        "stun": [pygame.transform.scale(pygame.image.load("sprites2/bot3idle0.png"), (250, 200))]
+    },  # Added comma here
+    "minion2": {
+        "idle": [pygame.transform.scale(pygame.image.load("sprites2/bot2idle0.png"), (200, 150)),
+                 pygame.transform.scale(pygame.image.load("sprites2/bot2idle1.png"), (200, 150)),
+                 pygame.transform.scale(pygame.image.load("sprites2/bot2idle2.png"), (200, 150)),
+                 pygame.transform.scale(pygame.image.load("sprites2/bot2idle3.png"), (200, 150)),
+                 pygame.transform.scale(pygame.image.load("sprites2/bot2idle4.png"), (200, 150))],
+        "special": [pygame.transform.scale(pygame.image.load("sprites2/bot2special0.png"), (200, 150)),
+                    pygame.transform.scale(pygame.image.load("sprites2/bot2special1.png"), (200, 150)),
+                    pygame.transform.scale(pygame.image.load("sprites2/bot2special2.png"), (200, 150)),
+                    pygame.transform.scale(pygame.image.load("sprites2/bot2special3.png"), (200, 150))],
+        "stun": [pygame.transform.scale(pygame.image.load("sprites2/bot2idle0.png"), (200, 150))]
+    },
+    # Thêm vào minion_characters (sau minion2)
+    "minion3": {
+        "idle": [pygame.transform.scale(pygame.image.load("sprites2/bot4idle0.png"), (200, 150)),
+                 pygame.transform.scale(pygame.image.load("sprites2/bot4idle1.png"), (200, 150)),
+                pygame.transform.scale(pygame.image.load("sprites2/bot4idle2.png"), (200, 150)),],
+        "special": [pygame.transform.scale(pygame.image.load("sprites2/bot4special0.png"), (200, 150)),
+                   pygame.transform.scale(pygame.image.load("sprites2/bot4special1.png"), (200, 150))],
+        "stun": [pygame.transform.scale(pygame.image.load("sprites2/bot4idle0.png"), (200, 150))]
+    },
+    "minion4": {
+    "idle": [pygame.transform.scale(pygame.image.load("sprites2/bot5idle0.png"), (230, 200)),
+             pygame.transform.scale(pygame.image.load("sprites2/bot5idle1.png"), (230, 200)),
+            pygame.transform.scale(pygame.image.load("sprites2/bot5idle2.png"), (230, 200)),
+            pygame.transform.scale(pygame.image.load("sprites2/bot5idle3.png"), (230, 200)),],
+    "special": [pygame.transform.scale(pygame.image.load("sprites2/bot5special0.png"), (230, 200))],
+    "stun": [pygame.transform.scale(pygame.image.load("sprites2/bot5idle0.png"), (230, 200))]
+    },
+    # Thêm vào minion_characters (sau minion4)
+    "minion5": {
+        "idle": [pygame.transform.scale(pygame.image.load("sprites2/bot1idle0.png"), (350, 200)),  # Kích thước lớn hơn
+                 pygame.transform.scale(pygame.image.load("sprites2/bot1idle1.png"), (350, 200)),
+                pygame.transform.scale(pygame.image.load("sprites2/bot1idle2.png"), (350, 200)),
+                pygame.transform.scale(pygame.image.load("sprites2/bot1idle3.png"), (350, 200)),],
+        "special": [pygame.transform.scale(pygame.image.load("sprites2/bot1special0.png"), (370, 230)),  # Hiệu ứng special lớn
+                    pygame.transform.scale(pygame.image.load("sprites2/bot1special1.png"), (370, 230))],
+        "stun": [pygame.transform.scale(pygame.image.load("sprites2/bot1idle0.png"), (350, 200))]
+}
+}
+
+
+# Thêm minion_characters vào characters chính
+characters.update(minion_characters)
+
+def select_adventure_level():
+    levels = adventure_levels
+    level_index = 0
+    selecting = True
+
+    background_image = pygame.image.load("sprites2/br.png")
+    background_image = pygame.transform.scale(background_image, (WIDTH, HEIGHT))
+    
+    title_font = pygame.font.Font("font/font0.otf", 54)
+    level_font = pygame.font.Font("font/font0.otf", 40)
+    button_font = pygame.font.Font("font/font0.otf", 30)
+    
+    back_button = pygame.Rect(30, 70, 100, 40)
+
+    while selecting:
+        screen.blit(background_image, (0, 0))
+        
+        title_text = title_font.render("Select Adventure Level", True, WHITE)
+        title_rect = title_text.get_rect(center=(WIDTH // 2, 100))
+        screen.blit(title_text, title_rect)
+
+        mouse_pos = pygame.mouse.get_pos()
+        for i, level in enumerate(levels):
+            level_text = level_font.render(level["name"], True, WHITE)
+            level_rect = level_text.get_rect(center=(WIDTH // 2, 200 + i * 80))
+            button_rect = pygame.Rect(level_rect.x - 10, level_rect.y - 10, level_rect.width + 20, level_rect.height + 20)
+            color = PINK if i == level_index else BLACK
+            if button_rect.collidepoint(mouse_pos):
+                level_index = i
+                color = PINK
+            draw_rounded_rect(screen, color, button_rect, 15)
+            screen.blit(level_text, level_rect)
+        
+        draw_rounded_rect(screen, BLACK if not back_button.collidepoint(mouse_pos) else ORANGE, back_button, 10)
+        back_text = button_font.render("Back", True, WHITE)
+        back_text_rect = back_text.get_rect(center=back_button.center)
+        screen.blit(back_text, back_text_rect)
+        
+        pygame.display.flip()
+        
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                exit()
+            if event.type == pygame.KEYDOWN:
+                if event.key in [pygame.K_w, pygame.K_UP]:
+                    level_index = (level_index - 1) % len(levels)
+                if event.key in [pygame.K_s, pygame.K_DOWN]:
+                    level_index = (level_index + 1) % len(levels)
+                if event.key == pygame.K_RETURN:
+                    pygame.mixer.Sound.play(click_sound)  # Phát âm thanh khi chọn bằng Enter
+                    selecting = False
+                if event.key == pygame.K_ESCAPE:
+                    return "mode"
+            if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+                if back_button.collidepoint(event.pos):
+                    pygame.mixer.Sound.play(click_sound)  # Phát âm thanh khi nhấp nút Back
+                    return "mode"
+                for i in range(len(levels)):
+                    level_text = level_font.render(levels[i]["name"], True, WHITE)
+                    level_rect = level_text.get_rect(center=(WIDTH // 2, 200 + i * 80))
+                    button_rect = pygame.Rect(level_rect.x - 10, level_rect.y - 10, level_rect.width + 20, level_rect.height + 20)
+                    if button_rect.collidepoint(event.pos):
+                        pygame.mixer.Sound.play(click_sound)  # Phát âm thanh khi nhấp level
+                        level_index = i
+                        selecting = False
+                        break
+    
+    return level_index
+
+
+
+class Projectile:
+    def __init__(self, x, y, direction):
+        self.x = x
+        self.y = y
+        self.speed = 10
+        self.direction = direction
+        self.hitbox = pygame.Rect(self.x, self.y, 20, 20)
+        self.damage = 100
+        self.image = pygame.image.load("sprites2/FireBallFinal.png")
+        self.image = pygame.transform.scale(self.image, (80, 80))
+
+    def move(self):
+        self.x += self.speed * self.direction
+        self.hitbox.topleft = (self.x, self.y)
+
+    def draw(self):
+        if self.direction == -1:
+            flipped_image = pygame.transform.flip(self.image, True, False)
+            screen.blit(flipped_image, (self.x, self.y))
+        else:
+            screen.blit(self.image, (self.x, self.y))
+
+class Fighter:
+    def __init__(self, x, y, character):
+        self.x = x
+        self.y = y
+        self.character = character
+        if character == "minion5":
+            self.hitbox_width = 200 # Tăng kích thước hitbox cho minion5
+            self.hitbox_height = 180
+        else:
+            self.hitbox_width = 55
+            self.hitbox_height = 125
+        self.hitbox = pygame.Rect(self.x, self.y, self.hitbox_width, self.hitbox_height)
+        self.speed = 5
+        self.health = 1000
+        self.max_health = 1000
+        self.is_jumping = False
+        self.jump_velocity = 0
+        self.gravity = 1
+        self.is_attacking = False
+        self.is_blocking = False
+        self.facing_right = True
+        self.has_attacked = False
+        self.is_stunned = False
+        self.stun_duration = 100
+        self.stun_timer = 0
+        self.last_attack_time = 0
+        self.attack_delay = 300
+        self.energy = 0
+        self.max_energy = 100
+        self.projectiles = []
+        
+        self.images = characters[character]
+        self.current_animation = self.images["idle"]
+        self.animation_index = 0
+        self.animation_timer = 0
+        self.frame_duration = 100
+        self.last_frame_update = pygame.time.get_ticks()
+
+        self.ground_y = 530
+        self.hitbox = pygame.Rect(self.x, self.y, self.hitbox_width, self.hitbox_height)
+        
+        self.is_straining = False
+        self.strain_timer = 0
+        self.strain_animation_index = 0
+        
+        self.is_moving = False
+
+        self.is_dashing = False
+        self.dash_distance = 10
+        self.dash_time = 0
+        self.is_minion = "minion" in character  # Kiểm tra xem có phải minion không
+
+        self.punch_hitbox = None
+        self.punch_hitbox_width = 70
+        self.punch_hitbox_height = 30
+        
+        # Thêm thuộc tính cho tính năng bay
+        self.is_flying = False
+        self.last_w_press = 0  # Thời gian nhấn W cuối cùng
+        self.last_up_press = 0  # Thời gian nhấn Up cuối cùng
+        self.double_press_delay = 300  # Thời gian tối đa giữa 2 lần nhấn (ms)
+        self.flying_speed = 5  # Tốc độ di chuyển khi bay
+
+        self.run_sound_playing = False
+
+        self.special_hitbox = None  # Hitbox đặc biệt cho chiêu special
+        self.special_hitbox_width = 1000 if character == "minion5" else 0  # Ví dụ: phạm vi rộng cho minion5
+        self.special_hitbox_height = 180 if character == "minion5" else 0
+        
+    def start_flying(self):
+        if not self.is_flying and not self.is_stunned:
+            self.is_flying = True
+            self.y -= 50  # Bay lên một chút ban đầu
+            self.is_jumping = False  # Tắt trạng thái nhảy
+            self.jump_velocity = 0
+        
+    # Đổi tên special_attack thành minion_special cho minion
+    def minion_special(self, opponent_x):
+        if self.energy >= 100:
+            self.facing_right = self.x < opponent_x
+            self.is_attacking = True
+            if self.is_minion:
+                self.current_animation = self.images["special"]
+                if self.character == "minion5":
+                    # Tạo hitbox đặc biệt cho minion5
+                    self.special_hitbox = pygame.Rect(self.x - 400, self.y, self.special_hitbox_width, self.special_hitbox_height)  # Phạm vi 1000
+            else:
+                self.current_animation = self.images["attack"]
+            self.animation_index = 0
+            self.energy = 0
+            direction = 1 if self.facing_right else -1
+            projectile = Projectile(self.x + (self.hitbox_width // 2), self.y + 20, direction)
+            return projectile
+        return None
+
+    
+    def dash(self):
+        if not self.is_dashing and self.energy >= 20:
+            self.is_dashing = True
+            self.dash_time = pygame.time.get_ticks()
+            new_x = self.x + (self.dash_distance if self.facing_right else -self.dash_distance)
+            if new_x < 0:
+                self.x = 0
+            elif new_x > WIDTH - self.hitbox_width:
+                self.x = WIDTH - self.hitbox_width
+            else:
+                self.x = new_x
+            self.energy -= 1
+            self.is_dashing = False
+    
+    def strain(self):
+        if not self.is_straining:  # Chỉ phát âm thanh khi bắt đầu strain
+            self.is_straining = True
+            self.strain_sound_playing = True
+            pygame.mixer.Sound.play(strain_sound, loops=-1)  # Phát âm thanh lặp vô hạn
+        self.energy += 1
+        if self.energy > self.max_energy:
+            self.energy = self.max_energy
+
+    def stop_straining(self):
+        self.is_straining = False
+        if self.strain_sound_playing:  # Dừng âm thanh khi nhả nút
+            pygame.mixer.Sound.stop(strain_sound)
+            self.strain_sound_playing = False
+        self.current_animation = self.images["idle"]
+        
+    def stop_running_sound(self):
+        if self.run_sound_playing:
+            pygame.mixer.Sound.stop(run_sound)
+            self.run_sound_playing = False    
+    
+    def update_hitbox(self):
+        if self.character == "minion5":
+            self.hitbox.topleft = (self.x + 20, self.y + 20)  # Dịch sang trái 10 đơn vị cho minion5
+        else:
+            self.hitbox.topleft = (self.x + 20, self.y + 20)  # Giữ nguyên cho các nhân vật khác
+
+    def move(self, direction):
+        if not self.is_attacking and not self.is_stunned:
+            self.is_moving = True  # Đặt trạng thái di chuyển
+            if self.is_flying:
+                if direction == "left" and self.x + 30 > 0:
+                    self.x -= self.flying_speed
+                    self.facing_right = False
+                    self.current_animation = self.images["dash"]
+                elif direction == "right" and self.x - 1 < WIDTH - self.hitbox_width:
+                    self.x += self.flying_speed
+                    self.facing_right = True
+                    self.current_animation = self.images["dash"]
+            else:
+                if direction == "left" and self.x + 30 > 0:
+                    self.x -= self.speed
+                    self.facing_right = False
+                    self.current_animation = self.images["run"]
+                    if not self.run_sound_playing and not self.is_minion:  # Kiểm tra trạng thái trước khi phát
+                        self.run_sound_playing = True
+                        pygame.mixer.Sound.play(run_sound, loops=-1)
+                elif direction == "right" and self.x - 1 < WIDTH - self.hitbox_width:
+                    self.x += self.speed
+                    self.facing_right = True
+                    self.current_animation = self.images["run"]
+                    if not self.run_sound_playing and not self.is_minion:  # Kiểm tra trạng thái trước khi phát
+                        self.run_sound_playing = True
+                        pygame.mixer.Sound.play(run_sound, loops=-1)
+        self.update_hitbox()
+
+    def jump(self):
+        if not self.is_jumping and not self.is_stunned:
+            self.is_jumping = True
+            self.jump_velocity = -15
+
+    def attack(self, opponent_x):
+        current_time = pygame.time.get_ticks()
+        if not self.is_attacking and not self.has_attacked and not self.is_stunned:
+            if current_time - self.last_attack_time >= self.attack_delay:
+                self.facing_right = self.x < opponent_x
+                self.is_attacking = True
+                self.current_animation = self.images["attack"]
+                self.animation_index = 0
+                self.has_attacked = True
+                self.last_attack_time = current_time
+                self.energy += 10
+                if self.energy > self.max_energy:
+                    self.energy = self.max_energy
+                # Phát âm thanh khi đấm
+                pygame.mixer.Sound.play(punch_sound)
+                # Đồng đều tầm đấm từ mép hitbox
+                if self.facing_right:
+                    self.punch_hitbox = pygame.Rect(self.x + self.hitbox_width, self.y + 50, self.punch_hitbox_width, self.punch_hitbox_height)
+                else:
+                    self.punch_hitbox = pygame.Rect(self.x - 30, self.y + 50, self.punch_hitbox_width, self.punch_hitbox_height)
+
+    
+    def special_attack(self, opponent_x):
+        if self.energy >= 100:
+            self.facing_right = self.x < opponent_x
+            self.is_attacking = True
+            self.current_animation = self.images["attack"]
+            self.animation_index = 0
+            self.energy = 0
+            direction = 1 if self.facing_right else -1
+            projectile = Projectile(self.x + (self.hitbox_width // 2), self.y + 50, direction)
+            return projectile
+        return None
+    
+    def block(self):
+        self.is_blocking = True
+        if "block" in self.images:
+            self.current_animation = self.images["block"]
+        else:
+            self.current_animation = self.images["idle"]
+
+    def stop_blocking(self):
+        self.is_blocking = False
+        self.current_animation = self.images["idle"]
+
+    def take_damage(self, damage):
+        if self.is_stunned:
+            return
+        if self.is_blocking and not self.is_minion:  # Minion không có block
+            damage //= 2
+        self.health -= damage
+        if self.health < 0:
+            self.health = 0
+        self.is_stunned = True
+        self.stun_timer = pygame.time.get_ticks()
+        if not self.is_minion:  # Chỉ player1 có hoạt ảnh stun
+            self.current_animation = self.images["stun"]
+        self.animation_timer = 0
+
+    def update(self):
+        current_time = pygame.time.get_ticks()
+        if self.is_minion:
+            if self.is_attacking:
+                if current_time - self.last_frame_update > self.frame_duration:
+                    self.last_frame_update = current_time
+                    self.animation_timer += 1
+                    if self.animation_timer >= len(self.current_animation):
+                        self.is_attacking = False
+                        self.current_animation = self.images["idle"]
+                        self.animation_timer = 0
+                        self.punch_hitbox = None  # Đặt lại punch_hitbox khi kết thúc tấn công
+            elif self.is_stunned:
+                self.current_animation = self.images["stun"]
+                if current_time - self.stun_timer >= self.stun_duration:
+                    self.is_stunned = False
+                    self.current_animation = self.images["idle"]
+                    self.animation_timer = 0
+            else:
+                # Cập nhật hoạt ảnh idle nếu không tấn công hoặc bị stun
+                if current_time - self.last_frame_update > self.frame_duration:
+                    self.last_frame_update = current_time
+                    self.animation_timer += 1
+                    if self.animation_timer >= len(self.current_animation):
+                        self.animation_timer = 0
+        else:
+            # Logic cho player
+            if self.is_attacking:
+                if current_time - self.last_frame_update > self.frame_duration:
+                    self.last_frame_update = current_time
+                    self.animation_timer += 1
+                    if self.animation_timer >= len(self.current_animation):
+                        self.is_attacking = False
+                        self.current_animation = self.images["idle"]
+                        self.animation_timer = 0
+                        self.has_attacked = False
+                        self.punch_hitbox = None
+                        self.stop_running_sound()  # Dừng âm thanh run khi tấn công
+            if self.is_straining:
+                self.strain_timer += 1
+                if self.strain_timer >= 200:
+                    self.stop_straining()
+                else:
+                    if self.strain_timer % 10 == 0:
+                        self.strain_animation_index = (self.strain_animation_index + 1) % len(self.images["strain"])
+                    self.current_animation = self.images["strain"]
+                    self.stop_running_sound()  # Dừng âm thanh run khi strain
+            else:
+                self.strain_timer = 0
+            
+            if not self.is_attacking and not self.is_straining:
+                if self.is_stunned:
+                    if current_time - self.stun_timer < self.stun_duration:
+                        if len(self.images["stun"]) > 1:
+                            if current_time - self.last_frame_update > self.frame_duration:
+                                self.last_frame_update = current_time
+                                self.animation_timer += 1
+                                if self.animation_timer >= len(self.images["stun"]):
+                                    self.animation_timer = 0
+                        return
+                    else:
+                        self.is_stunned = False
+                        self.current_animation = self.images["idle"]
+                        self.animation_timer = 0
+                        self.stop_running_sound()  # Dừng âm thanh run khi bị stun
+                
+                if self.is_blocking:
+                    if current_time - self.last_frame_update > self.frame_duration:
+                        self.last_frame_update = current_time
+                        self.animation_timer += 1
+                        if self.animation_timer >= len(self.images["block"]):
+                            self.animation_timer = 0
+                    self.stop_running_sound()  # Dừng âm thanh run khi block
+                    return
+                
+                if self.is_flying:
+                    if self.y >= self.ground_y:
+                        self.y = self.ground_y
+                        self.is_flying = False
+                        self.current_animation = self.images["idle"]
+                        self.stop_running_sound()  # Dừng âm thanh run khi ngừng bay
+                    elif not (pygame.key.get_pressed()[pygame.K_a] or pygame.key.get_pressed()[pygame.K_d] or 
+                              pygame.key.get_pressed()[pygame.K_LEFT] or pygame.key.get_pressed()[pygame.K_RIGHT]):
+                        self.current_animation = self.images["idle"]
+                        self.stop_running_sound()  # Dừng âm thanh run khi đứng im lúc bay
+                    elif self.current_animation == self.images["dash"]:
+                        if current_time - self.last_frame_update > self.frame_duration:
+                            self.last_frame_update = current_time
+                            self.animation_timer += 1
+                            if self.animation_timer >= len(self.current_animation):
+                                self.animation_timer = 0
+                elif self.is_jumping:
+                    self.y += self.jump_velocity
+                    self.jump_velocity += self.gravity
+                    if self.y >= self.ground_y:
+                        self.y = self.ground_y
+                        self.is_jumping = False
+                        self.current_animation = self.images["idle"]
+                        self.stop_running_sound()  # Dừng âm thanh run khi nhảy xong
+                elif not self.is_moving:  # Chỉ đặt về idle khi không di chuyển
+                    self.current_animation = self.images["idle"]
+                    self.stop_running_sound()  # Dừng âm thanh run khi đứng im
+                
+                # Cập nhật hoạt ảnh "run" khi đang di chuyển
+                if self.is_moving and not self.is_flying and not self.is_jumping and not self.is_attacking and not self.is_stunned:
+                    if self.current_animation == self.images["run"]:
+                        if current_time - self.last_frame_update > self.frame_duration:
+                            self.last_frame_update = current_time
+                            self.animation_timer += 1
+                            if self.animation_timer >= len(self.current_animation):
+                                self.animation_timer = 0
+                else:
+                    self.is_moving = False  # Đặt lại khi không di chuyển
+                    self.stop_running_sound()  # Dừng âm thanh run khi không di chuyển
+                
+                self.update_hitbox()
+                
+                if current_time - self.last_frame_update > self.frame_duration:
+                    self.last_frame_update = current_time
+                    self.animation_timer += 1
+                    if not self.is_attacking and not self.is_straining:
+                        if self.current_animation == self.images["run"]:
+                            if self.animation_timer >= len(self.current_animation):
+                                self.animation_timer = 0
+                        elif not self.is_jumping and not self.is_flying and not (pygame.key.get_pressed()[pygame.K_a] or pygame.key.get_pressed()[pygame.K_d]):
+                            if self.animation_timer >= len(self.current_animation):
+                                self.animation_timer = 0
+
+    
+    def minion_aoe_attack(self):
+        """Chiêu đặc biệt AoE của minion: gây sát thương trong phạm vi xung quanh"""
+        if self.energy >= 100 and self.is_minion:
+            self.is_attacking = True
+            self.current_animation = self.images["special"]
+            self.animation_timer = 0
+            self.energy = 0
+            return True  # Trả về True để báo hiệu chiêu được kích hoạt
+        return False
+        
+    def draw(self):
+        if self.is_dashing:
+            current_frame = 0
+            screen.blit(self.images["dash"][current_frame], (self.x, self.y))
+        else:
+            current_frame = self.strain_animation_index if self.is_straining else self.animation_timer % len(self.current_animation)
+            if self.character == "minion5":
+                image_width = self.current_animation[current_frame].get_width()  # Chiều rộng hình ảnh
+                image_height = self.current_animation[current_frame].get_height()  # Chiều cao hình ảnh
+                
+                # Tính toán vị trí căn giữa dựa trên hitbox
+                center_x = self.x + (self.hitbox_width // 2) - (image_width // 2)
+                center_y = self.y + (self.hitbox_height // 2) - (image_height // 2)
+            if self.facing_right:
+                screen.blit(self.current_animation[current_frame], (self.x - 50, self.y))
+            else:
+                flipped_image = pygame.transform.flip(self.current_animation[current_frame], True, False)
+                screen.blit(flipped_image, (self.x - 120, self.y))
+        
+        # Vẽ thanh máu cho minion ngay trên đầu
+        if self.is_minion:
+            health_bar_length = 50
+            health_bar_height = 5
+            health_bar_x = self.x + (self.hitbox_width // 2) - (health_bar_length // 2) -15
+            health_bar_y = self.y - 10
+            pygame.draw.rect(screen, BLACK, (health_bar_x, health_bar_y, health_bar_length, health_bar_height))
+            pygame.draw.rect(screen, RED, (health_bar_x, health_bar_y, health_bar_length * (self.health / self.max_health), health_bar_height))
+        
+# Chỉnh sửa hàm draw_health_bars để chỉ hiển thị cho player1 trong Adventure
+def draw_health_bar(player):
+    health_bar_length = 300
+    health_bar_height = 20
+    pygame.draw.rect(screen, BLACK, (50, 30, health_bar_length, health_bar_height))
+    pygame.draw.rect(screen, RED, (50, 30, health_bar_length * (player.health / player.max_health), health_bar_height))
+    pygame.draw.rect(screen, BLACK, (50, 30, health_bar_length, health_bar_height), 2)
+
+# Chỉnh sửa hàm draw_energy_bars để chỉ hiển thị cho player1 trong Adventure
+def draw_energy_bar(player):
+    energy_bar_length = 300
+    energy_bar_height = 10
+    pygame.draw.rect(screen, BLACK, (50, 60, energy_bar_length, energy_bar_height))
+    pygame.draw.rect(screen, BLUE, (50, 60, energy_bar_length * (player.energy / player.max_energy), energy_bar_height))
+    pygame.draw.rect(screen, BLACK, (50, 60, energy_bar_length, energy_bar_height), 2)
+
+
+def valuation_function(action, ai_health, opponent_health, distance, ai_energy, opponent_action):
+    values = {
+        "punch": 20 if distance < 50 else -10,
+        "kick": 25 if distance < 100 else -5,
+        "block": 15 if opponent_action in ["punch", "kick", "special"] else -5,
+        "dodge": 20 if ai_health < 300 and distance < 100 else 0,
+        "special": 40 if ai_energy >= 100 and distance > 50 else -20,
+        "strain": 30 if ai_energy < 50 and ai_health > 200 else -10,
+        "dash": 15 if distance > 150 else 5 if distance < 50 else 0,
+    }
+    return values.get(action, 0)
+
+def minimax(ai_health, opponent_health, distance, ai_energy, opponent_action, depth, maximizing_player, alpha, beta):
+    if depth == 0 or ai_health <= 0 or opponent_health <= 0:
+        return valuation_function("special", ai_health, opponent_health, distance, ai_energy, opponent_action)
+
+    if maximizing_player:
+        max_eval = -float('inf')
+        for action in actions + ["dash", "strain"]:
+            if action in ["punch", "kick", "special"]:
+                new_opponent_health = opponent_health - (10 if action in ["punch", "kick"] else 100 if action == "special" and ai_energy >= 100 else 0)
+                new_ai_energy = ai_energy - (100 if action == "special" else 0)
+            elif action == "strain":
+                new_ai_energy = min(ai_energy + 20, 100)
+                new_opponent_health = opponent_health
+            else:
+                new_ai_energy = ai_energy
+                new_opponent_health = opponent_health
+            
+            eval = minimax(ai_health, new_opponent_health, distance, new_ai_energy, opponent_action, depth - 1, False, alpha, beta)
+            max_eval = max(max_eval, eval)
+            alpha = max(alpha, eval)
+            if beta <= alpha:
+                break
+        return max_eval
+    else:
+        min_eval = float('inf')
+        for action in actions + ["dash", "strain"]:
+            if action in ["punch", "kick", "special"]:
+                new_ai_health = ai_health - (10 if action in ["punch", "kick"] else 100 if action == "special" else 0)
+            else:
+                new_ai_health = ai_health
+            
+            eval = minimax(new_ai_health, opponent_health, distance, ai_energy, opponent_action, depth - 1, True, alpha, beta)
+            min_eval = min(min_eval, eval)
+            beta = min(beta, eval)
+            if beta <= alpha:
+                break
+        return min_eval
+
+def ai_choose_action(ai_health, opponent_health, distance, ai_energy, opponent_action, depth=2):
+    best_action = None
+    action_weights = []
+
+    for action in actions + ["dash", "strain"]:
+        value = valuation_function(action, ai_health, opponent_health, distance, ai_energy, opponent_action)
+        eval = minimax(ai_health, opponent_health, distance, ai_energy, opponent_action, depth, True, -float('inf'), float('inf'))
+        total_value = value + eval * 0.7 + random.uniform(-10, 10)
+        action_weights.append((action, total_value))
+
+    total_weight = sum(max(weight, 0) for _, weight in action_weights) or 1
+    rand_choice = random.uniform(0, total_weight)
+    cumulative_weight = 0
+    for action, weight in action_weights:
+        if weight > 0:
+            cumulative_weight += weight
+            if cumulative_weight >= rand_choice:
+                best_action = action
+                break
+    
+    return best_action or random.choice(actions)
+
+# Sửa các hàm vẽ thanh máu và năng lượng để nhận player1 và player2 làm tham số
+def draw_health_bars(player1, player2):
+    health_bar_length = 300
+    health_bar_height = 20
+    pygame.draw.rect(screen, BLACK, (50, 30, health_bar_length, health_bar_height))
+    pygame.draw.rect(screen, RED, (50, 30, health_bar_length * (player1.health / player1.max_health), health_bar_height))
+    pygame.draw.rect(screen, BLACK, (50, 30, health_bar_length, health_bar_height), 2)
+
+    pygame.draw.rect(screen, BLACK, (WIDTH - 50 - health_bar_length, 30, health_bar_length, health_bar_height))
+    pygame.draw.rect(screen, RED, (WIDTH - 50 - health_bar_length, 30, health_bar_length * (player2.health / player2.max_health), health_bar_height))
+    pygame.draw.rect(screen, BLACK, (WIDTH - 50 - health_bar_length, 30, health_bar_length, health_bar_height), 2)
+
+def draw_energy_bars(player1, player2):
+    energy_bar_length = 300
+    energy_bar_height = 10
+    pygame.draw.rect(screen, BLACK, (50, 60, energy_bar_length, energy_bar_height))
+    pygame.draw.rect(screen, BLUE, (50, 60, energy_bar_length * (player1.energy / player1.max_energy), energy_bar_height))
+    pygame.draw.rect(screen, BLACK, (50, 60, energy_bar_length, energy_bar_height), 2)
+
+    pygame.draw.rect(screen, BLACK, (WIDTH - 50 - energy_bar_length, 60, energy_bar_length, energy_bar_height))
+    pygame.draw.rect(screen, BLUE, (WIDTH - 50 - energy_bar_length, 60, energy_bar_length * (player2.energy / player2.max_energy), energy_bar_height))
+    pygame.draw.rect(screen, BLACK, (WIDTH - 50 - energy_bar_length, 60, energy_bar_length, energy_bar_height), 2)
+
+def draw_background(background_image):
+    screen.blit(background_image, (0, 10))
+
+def main_game():
+    global effect_active1, effect_active2, effect_timer1, effect_timer2, effect_index1, effect_index2
+    
+    # Font và nút Pause (dùng icon)
+    button_font = pygame.font.Font("font/font0.otf", 30)
+    pause_button = pygame.Rect(5, 10, 40, 40)  # Nút Pause ở góc trên bên trái
+    pause_icon = pygame.image.load("sprites2/pause_icon.png")
+    pause_icon = pygame.transform.scale(pause_icon, (30, 30))
+    
+    while True:
+        mode = select_mode()
+        if mode == "main":
+            return
+        if mode not in ["PvP", "PvE", "Adventure"]:
+            continue
+
+        if mode == "Adventure":
+            while True:
+                player1_choice = character_selection(is_adventure=True)
+                if player1_choice == "mode":
+                    break
+                
+                level_index = select_adventure_level()
+                if level_index == "mode":
+                    break
+                
+                player1 = Fighter(100, 530, player1_choice)
+                level_data = adventure_levels[level_index]
+                
+                # Chia bot theo lượt (giữ nguyên logic chia lượt)
+                all_minions = level_data["minions"]
+                current_wave = 0
+                if level_index == 0:  # Level 1
+                    wave_counts = [1, 2, 3]
+                    wave_starts = [0, 1, 3]
+                elif level_index == 1:  # Level 2
+                    wave_counts = [2, 3, 1]
+                    wave_starts = [0, 2, 5]
+                elif level_index == 2:  # Level 3
+                    wave_counts = [2, 3, 2]
+                    wave_starts = [0, 2, 5]
+                elif level_index == 3:  # Level 4
+                    wave_counts = [3, 4, 2]
+                    wave_starts = [0, 3, 7]
+                elif level_index == 4:  # Level 5
+                    wave_counts = [1, 3, 5]
+                    wave_starts = [0, 1, 4]
+                else:
+                    break
+                minions = []
+                for i in range(wave_counts[current_wave]):
+                    minion_data = all_minions[wave_starts[current_wave] + i]
+                    minion = Fighter(minion_data["x"], 530, minion_data["character"])
+                    minion.max_health = minion.health = minion_data["health"]
+                    minion.speed = minion_data["speed"]
+                    minion.energy = minion_data["energy"]
+                    minion.ground_y = 550
+                    minions.append(minion)
+                
+                background_image = pygame.image.load(f"sprites2/{level_data['map']}.png")
+                background_image = pygame.transform.scale(background_image, (WIDTH, HEIGHT))
+                font = pygame.font.Font("font/font0.otf", 40)
+                
+                running = True
+                paused = False
+                clock = pygame.time.Clock()
+                
+                minion_move_timer = 0
+                minion_move_interval = 1000
+                minion_direction = random.choice([-1, 1])
+                minion_attack_timer = 0
+                
+                pause_menu_buttons = [
+                    {"text": "Continue", "rect": pygame.Rect(WIDTH//2 - 100, 300, 200, 60)},
+                    {"text": "Setting", "rect": pygame.Rect(WIDTH//2 - 100, 380, 200, 60)},
+                    {"text": "Exit to menu", "rect": pygame.Rect(WIDTH//2 - 125, 460, 250, 60)}
+                ]
+                selected_pause_button = 0
+                
+                while running:
+                    if not paused:
+                        draw_background(background_image)
+                        keys = pygame.key.get_pressed()
+                        
+                        if player1.is_flying:
+                            if keys[pygame.K_w] and player1.y > 0:
+                                player1.y -= player1.flying_speed
+                            if keys[pygame.K_s] and player1.y < HEIGHT - player1.hitbox_height:
+                                player1.y += player1.flying_speed
+                            if keys[pygame.K_a]:
+                                player1.move("left")
+                            if keys[pygame.K_d]:
+                                player1.move("right")
+                        else:
+                            if keys[pygame.K_a]:
+                                player1.move("left")
+                            if keys[pygame.K_d]:
+                                player1.move("right")
+                            if keys[pygame.K_k]:
+                                player1.jump()
+                        
+                        if keys[pygame.K_l]:
+                            player1.dash()
+                        if keys[pygame.K_u]:
+                            player1.strain()
+                        else:
+                            if player1.is_straining:
+                                player1.stop_straining()
+                        if keys[pygame.K_s] and not player1.is_flying:
+                            player1.block()
+                        else:
+                            if player1.is_blocking:
+                                player1.stop_blocking()
+                        if keys[pygame.K_j]:
+                            player1.attack(minions[0].x if minions else player1.x + 100)
+                        if keys[pygame.K_i]:
+                            if player1.energy >= 100:
+                                projectile = player1.special_attack(minions[0].x if minions else player1.x + 100)
+                                if projectile:
+                                    player1.projectiles.append(projectile)
+                        if keys[pygame.K_u]:
+                            effect_active1 = True
+                            effect_x1 = player1.x - 30
+                        else:
+                            effect_active1 = False
+                        
+                        # Logic bot (giữ nguyên)
+                        current_time = pygame.time.get_ticks()
+                        for minion in minions[:]:
+                            if not minion.is_attacking and not minion.is_stunned:
+                                distance = abs(player1.x - minion.x)
+                                minion_move_timer += clock.get_time()
+                                if minion_move_timer >= minion_move_interval:
+                                    minion_move_timer = 0
+                                    minion_direction = random.choice([-1, 1])
+                                new_x = minion.x + minion.speed * minion_direction
+                                if 0 < new_x < WIDTH - minion.hitbox_width:
+                                    minion.x = new_x
+                                    minion.facing_right = minion_direction > 0
+                                minion.update_hitbox()
+                                minion_attack_interval = 1000
+                                if minion.character == "minion1":
+                                    minion_attack_interval = 1000
+                                elif minion.character == "minion2":
+                                    minion_attack_interval = 500
+                                elif minion.character == "minion3":
+                                    minion_attack_interval = 750
+                                elif minion.character == "minion4":
+                                    minion_attack_interval = 350
+                                elif minion.character == "minion5":
+                                    minion_attack_interval = 300
+                                minion_attack_timer += clock.get_time()
+                                if minion.character == "minion5":
+                                    if distance < 1000:
+                                        if minion_attack_timer >= minion_attack_interval:
+                                            minion.is_attacking = True
+                                            minion.current_animation = minion.images["special"]
+                                            minion.animation_index = 0
+                                            minion_attack_timer = 0
+                                            minion.special_hitbox = pygame.Rect(minion.x - 400, minion.y + 20, 1000, 180)  # Hitbox đặc biệt
+                                            if minion.special_hitbox and minion.special_hitbox.colliderect(player1.hitbox):
+                                                damage = 60
+                                                player1.take_damage(damage)
+                                else:
+                                    if distance < 200:  # Giữ nguyên điều kiện cho các minion khác
+                                        if minion_attack_timer >= minion_attack_interval:
+                                            minion.is_attacking = True
+                                            minion.current_animation = minion.images["special"]
+                                            minion.animation_index = 0
+                                            minion_attack_timer = 0
+                                            if minion.hitbox.colliderect(player1.hitbox):
+                                                damage = 20 if minion.character == "minion1" else 30 if minion.character == "minion2" else 40 if minion.character == "minion3" else 40 if minion.character == "minion4" else 60
+                                                player1.take_damage(damage)
+                        
+                        # Logic tấn công và hiệu ứng (giữ nguyên)
+                        if player1.is_attacking and not player1.is_stunned and player1.punch_hitbox:
+                            for minion in minions[:]:
+                                if player1.punch_hitbox.colliderect(minion.hitbox):
+                                    height_diff = abs(player1.punch_hitbox.y - minion.hitbox.y)
+                                    if height_diff < 100:
+                                        minion.take_damage(10)
+
+                        for minion in minions:
+                            if minion.is_attacking and not minion.is_stunned and minion.punch_hitbox:
+                                if minion.punch_hitbox.colliderect(player1.hitbox):
+                                    height_diff = abs(minion.punch_hitbox.y - player1.hitbox.y)
+                                    if height_diff < 100:
+                                        player1.take_damage(10)
+                        
+                        for projectile in player1.projectiles[:]:
+                            projectile.move()
+                            projectile.draw()
+                            if projectile.x < 0 or projectile.x > WIDTH:
+                                player1.projectiles.remove(projectile)
+                            else:
+                                for minion in minions[:]:
+                                    if projectile.hitbox.colliderect(minion.hitbox):
+                                        damage = projectile.damage
+                                        minion.take_damage(damage)
+                                        player1.projectiles.remove(projectile)
+                                        break
+                        
+                        for minion in minions[:]:
+                            for projectile in minion.projectiles[:]:
+                                projectile.move()
+                                projectile.draw()
+                                if projectile.x < 0 or projectile.x > WIDTH:
+                                    minion.projectiles.remove(projectile)
+                                elif projectile.hitbox.colliderect(player1.hitbox):
+                                    damage = projectile.damage // 2 if player1.is_blocking else projectile.damage
+                                    player1.take_damage(damage)
+                                    minion.projectiles.remove(projectile)
+                        
+                        if effect_active1:
+                            effect_timer1 += clock.get_time()
+                            if effect_timer1 >= 100:
+                                effect_index1 = (effect_index1 + 1) % len(effect_images1)
+                                effect_timer1 = 0
+                            screen.blit(effect_images1[effect_index1], (effect_x1, player1.y))
+                        
+                        # Kiểm tra lượt bot (giữ nguyên)
+                        minions = [m for m in minions if m.health > 0]
+                        if not minions and current_wave < len(wave_counts) - 1:
+                            current_wave += 1
+                            for i in range(wave_counts[current_wave]):
+                                minion_data = all_minions[wave_starts[current_wave] + i]
+                                minion = Fighter(minion_data["x"], 530, minion_data["character"])
+                                minion.max_health = minion.health = minion_data["health"]
+                                minion.speed = minion_data["speed"]
+                                minion.energy = minion_data["energy"]
+                                minion.ground_y = 530
+                                minions.append(minion)
+                        
+                        if player1.health <= 0:
+                            text = font.render("Game Over!", True, WHITE)
+                            screen.blit(text, text.get_rect(center=(WIDTH // 2, HEIGHT // 2)))
+                            pygame.display.update()
+                            pygame.time.delay(3000)
+                            return
+                        elif not minions and current_wave == len(wave_counts) - 1:
+                            text = font.render(f"{level_data['name']} Cleared!", True, WHITE)
+                            screen.blit(text, text.get_rect(center=(WIDTH // 2, HEIGHT // 2)))
+                            pygame.display.update()
+                            pygame.time.delay(2000)
+                            return
+                        
+                        player1.update()
+                        for minion in minions:
+                            minion.update()
+                        player1.draw()
+                        for minion in minions:
+                            minion.draw()
+                        draw_health_bar(player1)
+                        draw_energy_bar(player1)
+                        
+                        level_text = font.render(level_data["name"], True, WHITE)
+                        screen.blit(level_text, (WIDTH // 2 - level_text.get_width() // 2, 10))
+                    
+                    # Vẽ nút Pause với icon
+                    mouse_pos = pygame.mouse.get_pos()
+                    draw_rounded_rect(screen, PINK if pause_button.collidepoint(mouse_pos) else WHITE, pause_button, 10)
+                    screen.blit(pause_icon, (pause_button.x + 5, pause_button.y + 5))
+                    
+                    if paused:
+                        pygame.draw.rect(screen, CREAM, (WIDTH//2 - 200, HEIGHT//2 - 200, 400, 400), border_radius=20)
+                        for i, button in enumerate(pause_menu_buttons):
+                            color = PINK if i == selected_pause_button else BLACK
+                            draw_rounded_rect(screen, color, button["rect"], 15)
+                            text = button_font.render(button["text"], True, WHITE)
+                            text_rect = text.get_rect(center=button["rect"].center)
+                            screen.blit(text, text_rect)
+                    
+                    pygame.display.update()
+                    
+                    for event in pygame.event.get():
+                        if event.type == pygame.QUIT:
+                            pygame.quit()
+                            exit()
+                        if event.type == pygame.KEYDOWN:
+                            if event.key == pygame.K_ESCAPE and not paused:
+                                paused = True
+                            elif paused:
+                                if event.key in [pygame.K_w, pygame.K_UP]:
+                                    selected_pause_button = (selected_pause_button - 1) % len(pause_menu_buttons)
+                                elif event.key in [pygame.K_s, pygame.K_DOWN]:
+                                    selected_pause_button = (selected_pause_button + 1) % len(pause_menu_buttons)
+                                elif event.key == pygame.K_RETURN:
+                                    pygame.mixer.Sound.play(click_sound)  # Phát âm thanh khi chọn bằng Enter
+                                    if pause_menu_buttons[selected_pause_button]["text"] == "Continue":
+                                        paused = False
+                                    elif pause_menu_buttons[selected_pause_button]["text"] == "Setting":
+                                        if not show_settings(in_game=True):
+                                            return
+                                    elif pause_menu_buttons[selected_pause_button]["text"] == "Exit to menu":
+                                        return
+                            elif event.key == pygame.K_w:
+                                current_time = pygame.time.get_ticks()
+                                if current_time - player1.last_w_press <= player1.double_press_delay:
+                                    player1.start_flying()
+                                player1.last_w_press = current_time
+                        if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+                            if pause_button.collidepoint(event.pos) and not paused:
+                                pygame.mixer.Sound.play(click_sound)  # Phát âm thanh khi nhấp nút Pause
+                                paused = True
+                            elif paused:
+                                for i, button in enumerate(pause_menu_buttons):
+                                    if button["rect"].collidepoint(event.pos):
+                                        pygame.mixer.Sound.play(click_sound)  # Phát âm thanh khi nhấp nút
+                                        if button["text"] == "Continue":
+                                            paused = False
+                                        elif button["text"] == "Setting":
+                                            if not show_settings(in_game=True):
+                                                return
+                                        elif button["text"] == "Exit to menu":
+                                            return
+                        if event.type == pygame.KEYUP:
+                            if event.key in [pygame.K_a, pygame.K_d] and not player1.is_flying:
+                                player1.current_animation = player1.images["idle"]
+                                player1.stop_running_sound()
+                    
+                    if not paused:
+                        clock.tick(80)
+                
+                break
+        
+        else:  # PvP và PvE (giữ nguyên logic, chỉ thêm âm thanh cho pause menu)
+            while True:
+                player1_choice, player2_choice = character_selection()
+                if player1_choice == "mode":
+                    break
+                if player1_choice is None or player2_choice is None:
+                    break
+
+                while True:
+                    selected_map = select_map()
+                    if selected_map == "character":
+                        break
+                    if selected_map not in maps:
+                        continue
+
+                    background_image = maps[selected_map]["background"]
+                    background_image = pygame.transform.scale(background_image, (WIDTH, HEIGHT))
+                    player1 = Fighter(200, 530, player1_choice)
+                    player2 = Fighter(1000, 530, player2_choice)
+
+                    start_time = pygame.time.get_ticks()
+                    time_limit = 60 * 1000
+                    elapsed_time = 0
+                    font = pygame.font.Font("font/font1.ttf", 40)
+                    victory_font = pygame.font.Font("font/font0.otf", 80)
+
+                    ai_action_timer = 0
+                    ai_action_delay = 500
+                    running = True
+                    paused = False
+                    clock = pygame.time.Clock()
+
+                    pause_menu_buttons = [
+                        {"text": "Continue", "rect": pygame.Rect(WIDTH//2 - 100, 300, 200, 60)},
+                        {"text": "Setting", "rect": pygame.Rect(WIDTH//2 - 100, 380, 200, 60)},
+                        {"text": "Exit to menu", "rect": pygame.Rect(WIDTH//2 - 125, 460, 250, 60)}
+                    ]
+                    selected_pause_button = 0
+                    pause_start_time = 0
+
+                    while running:
+                        current_time = pygame.time.get_ticks()
+                        if not paused:
+                            elapsed_time = current_time - start_time
+                            remaining_time = max(0, (time_limit - elapsed_time) // 1000)
+
+                            draw_background(background_image)
+                            keys = pygame.key.get_pressed()
+
+                            time_text = font.render(f"{remaining_time}", True, WHITE)
+                            screen.blit(time_text, (WIDTH // 2 - time_text.get_width() // 2, 30))
+
+                            # Logic PvP và PvE (giữ nguyên, không thay đổi)
+                            if mode == "PvP":
+                                if player1.is_flying:
+                                    if keys[pygame.K_w] and player1.y > 0:
+                                        player1.y -= player1.flying_speed
+                                    if keys[pygame.K_s] and player1.y < HEIGHT - player1.hitbox_height:
+                                        player1.y += player1.flying_speed
+                                    if keys[pygame.K_a]:
+                                        player1.move("left")
+                                    if keys[pygame.K_d]:
+                                        player1.move("right")
+                                else:
+                                    if keys[pygame.K_a]:
+                                        player1.move("left")
+                                    if keys[pygame.K_d]:
+                                        player1.move("right")
+                                    if keys[pygame.K_k]:
+                                        player1.jump()
+                                
+                                if keys[pygame.K_l]:
+                                    player1.dash()
+                                if keys[pygame.K_u]:
+                                    player1.strain()
+                                else:
+                                    if player1.is_straining:
+                                        player1.stop_straining()
+                                if keys[pygame.K_s] and not player1.is_flying:
+                                    player1.block()
+                                else:
+                                    if player1.is_blocking:
+                                        player1.stop_blocking()
+                                if keys[pygame.K_j]:
+                                    player1.attack(player2.x)
+                                if keys[pygame.K_i]:
+                                    if player1.energy >= 100:
+                                        projectile = player1.special_attack(player2.x)
+                                        if projectile:
+                                            player1.projectiles.append(projectile)
+                                if keys[pygame.K_u]:
+                                    effect_active1 = True
+                                    effect_x1 = player1.x - 30
+                                else:
+                                    effect_active1 = False
+                                
+                                if player2.is_flying:
+                                    if keys[pygame.K_UP] and player2.y > 0:
+                                        player2.y -= player2.flying_speed
+                                    if keys[pygame.K_DOWN] and player2.y < HEIGHT - player2.hitbox_height:
+                                        player2.y += player2.flying_speed
+                                    if keys[pygame.K_LEFT]:
+                                        player2.move("left")
+                                    if keys[pygame.K_RIGHT]:
+                                        player2.move("right")
+                                else:
+                                    if keys[pygame.K_LEFT]:
+                                        player2.move("left")
+                                    if keys[pygame.K_RIGHT]:
+                                        player2.move("right")
+                                    if keys[pygame.K_KP2]:
+                                        player2.jump()
+                                
+                                if keys[pygame.K_KP3]:
+                                    player2.dash()
+                                if keys[pygame.K_KP4]:
+                                    player2.strain()
+                                else:
+                                    if player2.is_straining:
+                                        player2.stop_straining()
+                                if keys[pygame.K_DOWN] and not player2.is_flying:
+                                    player2.block()
+                                else:
+                                    if player2.is_blocking:
+                                        player2.stop_blocking()
+                                if keys[pygame.K_KP1]:
+                                    player2.attack(player1.x)
+                                if keys[pygame.K_KP5]:
+                                    if player2.energy >= 100:
+                                        projectile = player2.special_attack(player1.x)
+                                        if projectile:
+                                            player2.projectiles.append(projectile)
+                                if keys[pygame.K_KP4]:
+                                    effect_active2 = True
+                                    effect_x2 = player2.x - 30
+                                else:
+                                    effect_active2 = False
+                            
+                            elif mode == "PvE":
+                                if player1.is_flying:
+                                    if keys[pygame.K_w] and player1.y > 0:
+                                        player1.y -= player1.flying_speed
+                                    if keys[pygame.K_s] and player1.y < HEIGHT - player1.hitbox_height:
+                                        player1.y += player1.flying_speed
+                                    if keys[pygame.K_a]:
+                                        player1.move("left")
+                                    if keys[pygame.K_d]:
+                                        player1.move("right")
+                                else:
+                                    if keys[pygame.K_a]:
+                                        player1.move("left")
+                                    if keys[pygame.K_d]:
+                                        player1.move("right")
+                                    if keys[pygame.K_k]:
+                                        player1.jump()
+                                
+                                if keys[pygame.K_l]:
+                                    player1.dash()
+                                if keys[pygame.K_u]:
+                                    player1.strain()
+                                else:
+                                    if player1.is_straining:
+                                        player1.stop_straining()
+                                if keys[pygame.K_s] and not player1.is_flying:
+                                    player1.block()
+                                else:
+                                    if player1.is_blocking:
+                                        player1.stop_blocking()
+                                if keys[pygame.K_j]:
+                                    player1.attack(player2.x)
+                                if keys[pygame.K_i]:
+                                    if player1.energy >= 100:
+                                        projectile = player1.special_attack(player2.x)
+                                        if projectile:
+                                            player1.projectiles.append(projectile)
+                                if keys[pygame.K_u]:
+                                    effect_active1 = True
+                                    effect_x1 = player1.x - 30
+                                else:
+                                    effect_active1 = False
+                                
+                                # AI logic (sửa để đảm bảo hoạt ảnh "run" hoạt động)
+                                if not player2.is_attacking and not player2.is_stunned:
+                                    distance = abs(player1.x - player2.x)
+                                    ai_low_health = player2.health < 333
+                                    player_stationary = not (keys[pygame.K_a] or keys[pygame.K_d])
+                                    projectile_incoming = False
+                                    for projectile in player1.projectiles:
+                                        if projectile.direction == 1 and projectile.x < player2.x and projectile.x + 80 > player2.x - 50:
+                                            projectile_incoming = True
+                                        elif projectile.direction == -1 and projectile.x > player2.x and projectile.x - 80 < player2.x + 50:
+                                            projectile_incoming = True
+                            
+                                    if ai_low_health:
+                                        if (distance < 100 or projectile_incoming) and random.random() < 0.7:
+                                            player2.block()
+                                        elif player2.energy >= 20 and random.random() < 0.4:
+                                            if current_time - player2.last_attack_time > player2.attack_delay:
+                                                player2.dash()
+                                        elif random.random() < 0.4:
+                                            # Khi AI di chuyển, kích hoạt hoạt ảnh "run"
+                                            direction = "left" if player1.x < player2.x else "right"
+                                            player2.move(direction)
+                                            player2.current_animation = player2.images["run"]  # Đặt trực tiếp hoạt ảnh "run"
+                                            player2.is_moving = True  # Đảm bảo trạng thái di chuyển
+                                        elif distance > 100 and player2.energy < 50 and random.random() < 0.5:
+                                            player2.strain()
+                                        elif player2.energy >= 100 and distance > 50:
+                                            if current_time - player2.last_attack_time > player2.attack_delay:
+                                                projectile = player2.special_attack(player1.x)
+                                                if projectile:
+                                                    player2.projectiles.append(projectile)
+                                        elif (distance < 50 or player_stationary) and random.random() < 0.3:
+                                            if current_time - player2.last_attack_time > player2.attack_delay:
+                                                player2.attack(player1.x)
+                                    else:
+                                        if distance > 100:
+                                            if player_stationary or random.random() < 0.8:
+                                                # Khi AI di chuyển, kích hoạt hoạt ảnh "run"
+                                                direction = "left" if player1.x < player2.x else "right"
+                                                player2.move(direction)
+                                                player2.current_animation = player2.images["run"]  # Đặt trực tiếp hoạt ảnh "run"
+                                                player2.is_moving = True  # Đảm bảo trạng thái di chuyển
+                                            elif player2.energy < 50 and random.random() < 0.5:
+                                                player2.strain()
+                                            elif random.random() < 0.05:
+                                                if current_time - player2.last_attack_time > player2.attack_delay:
+                                                    player2.jump()
+                                        else:
+                                            if projectile_incoming:
+                                                player2.block()
+                                            elif player2.energy >= 100 and distance > 50:
+                                                if current_time - player2.last_attack_time > player2.attack_delay:
+                                                    projectile = player2.special_attack(player1.x)
+                                                    if projectile:
+                                                        player2.projectiles.append(projectile)
+                                            elif distance < 50 or player_stationary:
+                                                if current_time - player2.last_attack_time > player2.attack_delay:
+                                                    player2.attack(player1.x)
+                                    
+                                    if player2.is_blocking:
+                                        if current_time - player2.last_attack_time > 500:
+                                            player2.stop_blocking()
+                                    elif player2.is_straining:
+                                        if current_time - player2.last_attack_time > 1000:
+                                            player2.stop_straining()
+                                                        
+                            # Logic tấn công và hiệu ứng (giữ nguyên)
+                            if player1.is_attacking and not player1.is_stunned and player1.punch_hitbox:
+                                if player1.punch_hitbox.colliderect(player2.hitbox):
+                                    height_diff = abs(player1.punch_hitbox.y - player2.hitbox.y)
+                                    if height_diff < 100:
+                                        player2.take_damage(10)
+
+                            if player2.is_attacking and not player2.is_stunned and player2.punch_hitbox:
+                                if player2.punch_hitbox.colliderect(player1.hitbox):
+                                    height_diff = abs(player2.punch_hitbox.y - player1.hitbox.y)
+                                    if height_diff < 100:
+                                        player1.take_damage(10)
+                            
+                            for projectile in player1.projectiles[:]:
+                                projectile.move()
+                                projectile.draw()
+                                if projectile.x < 0 or projectile.x > WIDTH:
+                                    player1.projectiles.remove(projectile)
+                            
+                            for projectile in player2.projectiles[:]:
+                                projectile.move()
+                                projectile.draw()
+                                if projectile.x < 0 or projectile.x > WIDTH:
+                                    player2.projectiles.remove(projectile)
+                            
+                            for projectile in player1.projectiles[:]:
+                                if projectile.hitbox.colliderect(player2.hitbox):
+                                    if player2.is_blocking:
+                                        damage = projectile.damage // 2
+                                    else:
+                                        damage = projectile.damage
+                                    player2.take_damage(damage)
+                                    player1.projectiles.remove(projectile)
+                                    break
+                            
+                            for projectile in player2.projectiles[:]:
+                                if projectile.hitbox.colliderect(player1.hitbox):
+                                    if player1.is_blocking:
+                                        damage = projectile.damage // 2
+                                    else:
+                                        damage = projectile.damage
+                                    player1.take_damage(damage)
+                                    player2.projectiles.remove(projectile)
+                                    break
+                            
+                            if effect_active1:
+                                effect_timer1 += clock.get_time()
+                                if effect_timer1 >= 100:
+                                    effect_index1 = (effect_index1 + 1) % len(effect_images1)
+                                    effect_timer1 = 0
+                            
+                            if effect_active2:
+                                effect_timer2 += clock.get_time()
+                                if effect_timer2 >= 100:
+                                    effect_index2 = (effect_index2 + 1) % len(effect_images2)
+                                    effect_timer2 = 0
+                            
+                            if effect_active1:
+                                screen.blit(effect_images1[effect_index1], (effect_x1, player1.y))
+                            if effect_active2:
+                                screen.blit(effect_images2[effect_index2], (effect_x2, player2.y))
+                            
+                            if player1.health <= 0 or player2.health <= 0:
+                                winner = "Player 1 Wins!" if player2.health <= 0 else "Player 2 Wins!"
+                                text = victory_font.render(winner, True, WHITE)
+                                text_rect = text.get_rect(center=(WIDTH // 2, HEIGHT // 2))
+                                screen.blit(background_image, (0, 0))
+                                screen.blit(text, text_rect)
+                                pygame.display.update()
+                                pygame.time.delay(3000)
+                                running = False
+                            elif remaining_time == 0:
+                                if player1.health > player2.health:
+                                    winner = "Player 1 Wins!"
+                                elif player2.health > player1.health:
+                                    winner = "Player 2 Wins!"
+                                else:
+                                    winner = "Draw!"
+                                text = victory_font.render(winner, True, WHITE)
+                                text_rect = text.get_rect(center=(WIDTH // 2, HEIGHT // 2))
+                                screen.blit(background_image, (0, 0))
+                                screen.blit(text, text_rect)
+                                pygame.display.update()
+                                pygame.time.delay(3000)
+                                running = False
+                            
+                            player1.update()
+                            player2.update()
+                            player1.draw()
+                            player2.draw()
+                            draw_health_bars(player1, player2)
+                            draw_energy_bars(player1, player2)
+                        
+                        # Vẽ nút Pause với icon
+                        mouse_pos = pygame.mouse.get_pos()
+                        draw_rounded_rect(screen, PINK if pause_button.collidepoint(mouse_pos) else WHITE, pause_button, 10)
+                        screen.blit(pause_icon, (pause_button.x + 5, pause_button.y + 5))
+                        
+                        if paused:
+                            pygame.draw.rect(screen, CREAM, (WIDTH//2 - 200, HEIGHT//2 - 200, 400, 400), border_radius=20)
+                            for i, button in enumerate(pause_menu_buttons):
+                                color = PINK if i == selected_pause_button else BLACK
+                                draw_rounded_rect(screen, color, button["rect"], 15)
+                                text = button_font.render(button["text"], True, WHITE)
+                                text_rect = text.get_rect(center=button["rect"].center)
+                                screen.blit(text, text_rect)
+                            time_text = font.render(f"{remaining_time}", True, WHITE)
+                            screen.blit(time_text, (WIDTH // 2 - time_text.get_width() // 2, 30))
+                        
+                        pygame.display.update()
+                        
+                        for event in pygame.event.get():
+                            if event.type == pygame.QUIT:
+                                running = False
+                            if event.type == pygame.KEYDOWN:
+                                if event.key == pygame.K_ESCAPE and not paused:
+                                    paused = True
+                                    pause_start_time = current_time
+                                elif paused:
+                                    if event.key in [pygame.K_w, pygame.K_UP]:
+                                        selected_pause_button = (selected_pause_button - 1) % len(pause_menu_buttons)
+                                    elif event.key in [pygame.K_s, pygame.K_DOWN]:
+                                        selected_pause_button = (selected_pause_button + 1) % len(pause_menu_buttons)
+                                    elif event.key == pygame.K_RETURN:
+                                        pygame.mixer.Sound.play(click_sound)  # Phát âm thanh khi chọn bằng Enter
+                                        if pause_menu_buttons[selected_pause_button]["text"] == "Continue":
+                                            paused = False
+                                            start_time += current_time - pause_start_time
+                                        elif pause_menu_buttons[selected_pause_button]["text"] == "Setting":
+                                            if not show_settings(in_game=True):
+                                                return
+                                        elif pause_menu_buttons[selected_pause_button]["text"] == "Exit to menu":
+                                            return
+                                elif event.key == pygame.K_w:
+                                    current_time = pygame.time.get_ticks()
+                                    if current_time - player1.last_w_press <= player1.double_press_delay:
+                                        player1.start_flying()
+                                    player1.last_w_press = current_time
+                                elif event.key == pygame.K_UP and mode == "PvP":
+                                    current_time = pygame.time.get_ticks()
+                                    if current_time - player2.last_up_press <= player2.double_press_delay:
+                                        player2.start_flying()
+                                    player2.last_up_press = current_time
+                            if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+                                if pause_button.collidepoint(event.pos) and not paused:
+                                    pygame.mixer.Sound.play(click_sound)  # Phát âm thanh khi nhấp nút Pause
+                                    paused = True
+                                    pause_start_time = current_time
+                                elif paused:
+                                    for i, button in enumerate(pause_menu_buttons):
+                                        if button["rect"].collidepoint(event.pos):
+                                            pygame.mixer.Sound.play(click_sound)  # Phát âm thanh khi nhấp nút
+                                            if button["text"] == "Continue":
+                                                paused = False
+                                                start_time += current_time - pause_start_time
+                                            elif button["text"] == "Setting":
+                                                if not show_settings(in_game=True):
+                                                    return
+                                            elif button["text"] == "Exit to menu":
+                                                return
+                            if event.type == pygame.KEYUP:
+                                if event.key in [pygame.K_a, pygame.K_d] and not player1.is_flying:
+                                    player1.current_animation = player1.images["idle"]
+                                    player1.stop_running_sound()  # Dừng âm thanh run khi nhả phím
+                                if event.key in [pygame.K_LEFT, pygame.K_RIGHT] and not player2.is_flying:
+                                    player2.current_animation = player2.images["idle"]
+                                    player2.stop_running_sound()  # Dừng âm thanh run khi nhả phím
+                        if not paused:
+                            clock.tick(80)
+                    
+                    return
+
+
+# Gọi loading_screen ngay sau khi khởi tạo Pygame
+if loading_screen():
+    running = True
+else:
+    running = False  # Nếu người dùng thoát trong lúc tải
+
+while running:
+    if main_menu():
+        main_game()
+    else:
+        running = False  # Thoát vòng lặp chính khi chọn Quit hoặc đóng cửa sổ
+
+pygame.quit()
